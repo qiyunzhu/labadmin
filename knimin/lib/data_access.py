@@ -2506,7 +2506,6 @@ class KniminAccess(object):
         ----------
         qiita_study_id : int
         title : str
-            Search for these values to make sure they don't already exist
         study_id : int
             Skip this ID in searching
 
@@ -2515,45 +2514,35 @@ class KniminAccess(object):
         ValueError
             If neither value is given, or either value already exists
         """
-        cols = ((qiita_study_id, 'qiita_study_id', 'Qiita study ID'),
-                (title, 'title', 'Title'))
-        if not (cols[0][0] or cols[1][0]):
-            raise ValueError('Either %s or %s must be given.'
-                             % (cols[0][2], cols[1][2]))
-        errs = []
-        for col in cols:
-            if col[0]:
+        tags = ['Qiita study ID', 'Title']
+        cols = [tag.lower().replace(' ', '_') for tag in tags]
+        vals = [vars()[col] for col in cols]
+        if all(val is None for val in vals):
+            raise ValueError('Either %s or %s must be specified.'
+                             % (tags[0], tags[1]))
+        dups = [0 for tag in tags]
+        for i in range(len(vals)):
+            if tags[i]:
                 sql = """SELECT study_id
                          FROM pm.study
                          WHERE {} = %s
-                         AND study_id IS DISTINCT FROM %s""".format(col[1])
-                sql_args = [col[0], study_id]
+                         AND study_id IS DISTINCT FROM %s""".format(cols[i])
+                sql_args = [vals[i], study_id]
                 res = self._con.execute_fetchone(sql, sql_args)
                 if res:
+                    dups[i] = res[0]
+        if dups[0] and len(set(dups)) <= 1:
+            raise ValueError('%s %s and %s %s conflict with exisiting study '
+                             '%s.' % (tags[0], repr(vals[0]), tags[1],
+                                      repr(vals[1]), dups[0]))
+        else:
+            errs = []
+            for i in range(len(tags)):
+                if dups[i]:
                     errs.append('%s %s conflicts with exisiting study %s.'
-                                % (col[2], repr(col[0]), res[0]))
-        if errs:
-            raise ValueError(' '.join(errs))
-#        if qiita_study_id:
-#            sql = """SELECT study_id
-#                     FROM pm.study
-#                     WHERE qiita_study_id = %s
-#                     AND study_id IS DISTINCT FROM %s"""
-#            sql_args = [qiita_study_id, study_id]
-#            res = self._con.execute_fetchone(sql, sql_args)
-#            if res:
-#                errs.append('Qiita study ID %s conflicts with exisiting '
-#                            'study %s.' % (qiita_study_id, res[0]))
-#        if title:
-#            sql = """SELECT study_id
-#                     FROM pm.study
-#                     WHERE title = %s
-#                     AND study_id IS DISTINCT FROM %s"""
-#            sql_args = [title, study_id]
-#            res = self._con.execute_fetchone(sql, sql_args)
-#            if res:
-#                errs.append('Title "%s" conflicts with exisiting '
-#                            'study %s.' % (title, res[0]))
+                                % (tags[i], repr(vals[i]), dups[i]))
+            if errs:
+                raise ValueError(' '.join(errs))
 
     def create_study(self, qiita_study_id=None, title=None, alias=None,
                      notes=None):
@@ -2581,8 +2570,7 @@ class KniminAccess(object):
             sql = """INSERT INTO pm.study (qiita_study_id, title, alias, notes)
                      VALUES (%s, %s, %s, %s)
                      RETURNING study_id"""
-            sql_args = [qiita_study_id or None, title or None, alias or None,
-                        notes or None]
+            sql_args = [qiita_study_id, title, alias, notes]
             TRN.add(sql, sql_args)
             return TRN.execute_fetchlast()
 
@@ -2716,11 +2704,11 @@ class KniminAccess(object):
                 if self._sample_exists(sample_id):
                     raise ValueError('Sample ID %s already exists.'
                                      % sample_id)
-                barcode = sample.get('barcode') or None
+                barcode = sample.get('barcode')
                 if barcode:
                     self._barcode_exists(barcode)
-                is_blank = sample.get('is_blank') or False
-                notes = sample.get('notes') or None
+                is_blank = sample.get('is_blank', False)
+                notes = sample.get('notes')
                 sql = """INSERT INTO pm.sample (sample_id, is_blank, barcode,
                                                 notes)
                          VALUES (%s, %s, %s, %s)
@@ -2752,11 +2740,11 @@ class KniminAccess(object):
                 if not self._sample_exists(sample_id):
                     raise ValueError('Sample ID %s does not exist.'
                                      % sample_id)
-                barcode = sample.get('barcode') or None
+                barcode = sample.get('barcode')
                 if barcode:
                     self._barcode_exists(barcode)
-                is_blank = sample.get('is_blank') or False
-                notes = sample.get('notes') or None
+                is_blank = sample.get('is_blank', False)
+                notes = sample.get('notes')
                 sql = """UPDATE pm.sample
                          SET is_blank = %s, barcode = %s, notes = %s
                          WHERE sample_id = %s
@@ -2816,37 +2804,119 @@ class KniminAccess(object):
                          RETURNING sample_id"""
                 TRN.add(sql, [sample_id])
 
-    def create_sample_plate(self, sample_plate_info):
-        """Creates a new sample plate and sets values for mandatory fields
+    def _sample_plate_is_unique(self, name):
+        """Confirms that a sample plate name is not duplicate
 
         Parameters
         ----------
-        sample_plate_info: tuple of (str x2, datetime, str x2)
-            name, email, creation_timestamp, notes, plate_type
+        name : str
+
+        Raises
+        ------
+        ValueError
+            If the sample plate name already exists
+        """
+        sql = """SELECT sample_plate_id FROM pm.sample_plate
+                 WHERE name = %s)"""
+        res = self._con.execute_fetchone(sql, [name])
+        if res:
+            raise ValueError('Name %s conflicts with exisiting sample plate '
+                             '%s.' % (repr(name), res[0]))
+
+    def _email_exists(self, email):
+        """Confirms that an email exists
+
+        Parameters
+        ----------
+        barcode : str
+
+        Raises
+        ------
+        ValueError
+            If the email does not exist
+        """
+        sql = """SELECT EXISTS (SELECT 1 FROM ag.labadmin_users
+                                WHERE email = %s)"""
+        if not self._con.execute_fetchone(sql, [email])[0]:
+            raise ValueError('Email %s does not exist.' % email)
+
+    def _get_plate_type_id_by_name(self, name):
+        """Gets plate type ID by name
+
+        Parameters
+        ----------
+        name : str
+            Name of the plate type. If None, ID of the first plate type (i.e.,
+            96-well) will return
+
+        Returns
+        -------
+        int
+            ID of the plate type
+
+        Raises
+        ------
+        ValueError
+            If the plate type name does not exist
+        """
+        if name:
+            sql = """SELECT plate_type_id FROM pm.plate_type
+                     WHERE name = %s"""
+            res = self._con.execute_fetchone(sql, [name])
+            if not res:
+                raise ValueError('Plate type %s does not exist.' % repr(name))
+            return res[0]
+        else:
+            sql = """SELECT plate_type_id FROM pm.plate_type
+                     ORDER BY plate_type_id ASC LIMIT 1"""
+            res = self._con.execute_fetchone(sql)
+            return res[0]
+
+    def create_sample_plate(self, name, email=None, created_on=None,
+                            notes=None, plate_type=None):
+        """Creates a new sample plate
+
+        Parameters
+        ----------
+        name : str
+        email : str
+        created_on: datetime
+        notes : str
+        plate_type : str
+            If None, the first plate type (i.e., 96-well) will be used
 
         Returns
         -------
         int
             ID of the created sample plate
         """
-        sql = """INSERT INTO pm.sample_plate (name, email, creation_timestamp,
-                 notes, plate_type_id) VALUES (%s, %s, %s, %s,
-                 (SELECT plate_type_id FROM pm.plate_type WHERE name = %s))
-                 RETURNING sample_plate_id"""
-        sql_args = list(sample_plate_info)
-        for i in range(1, 4):
-            sql_args[i] = sql_args[i] or None
-        return self._con.execute_fetchone(sql, sql_args)[0]
+        self._sample_plate_is_unique(name)
+        if email:
+            self._email_exists(email)
+        plate_type_id = self._get_plate_type_id_by_name(plate_type)
+        with TRN:
+            sql = """INSERT INTO pm.sample_plate (name, email, created_on,
+                                                  notes, plate_type_id)
+                     VALUES (%s, %s, %s, %s, %s)
+                     RETURNING sample_plate_id"""
+            sql_args = [name, email, created_on, notes, plate_type_id]
+            TRN.add(sql, sql_args)
+            return TRN.execute_fetchlast()
 
-    def set_sample_plate_info(self, sample_plate_id, sample_plate_info):
-        """Sets attributes of a sample plate by ID
+    def edit_sample_plate(self, id, name, email=None, created_on=None,
+                          notes=None, plate_type=None):
+        """Edits properties of a sample plate
 
         Parameters
         ----------
-        sample_plate_id : int
-            ID of the sample plate to set attributes to
-        sample_plate_info: tuple of (str x2, datetime, str x2)
-            name, email, creation_timestamp, notes, plate_type
+        id : int
+            ID of the sample plate to edit
+        name : str
+        email : str
+        created_on: datetime
+        notes : str
+        plate_type : str
+            If None, the first plate type (i.e., 96-well) will be used
 
         Returns
         -------
