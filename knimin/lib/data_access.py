@@ -3077,11 +3077,6 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
-
-        Returns
-        -------
-        bool
-            True if successful
         """
         self._sample_plate_exists(id)
         if self._sample_plate_layout_exists(id):
