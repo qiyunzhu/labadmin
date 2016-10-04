@@ -7,8 +7,9 @@
 {% from json import dumps %}
 <script type="text/javascript" src="/static/js/labmin.js"></script>
 <script type="text/javascript" src="/static/vendor/js/jquery.validate.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css">
+<script type="text/javascript" src="/static/vendor/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="/static/vendor/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 <style>
   p {
     font-weight: bold;
@@ -18,17 +19,32 @@
     text-decoration: none;
     font-size: 80%;
   }
+  select {
+    border: 1px solid black;
+    padding: 5px 10px 5px 10px;
+  }
+  button.inline {
+    padding: 1px 4px 1px 4px;
+    border: 1px solid transparent;
+    background-color: transparent;
+    text-decoration: none;
+    font-size: 80%;
+  }
+  button.inline:hover {
+    border: 1px solid black;
+    background-color: dimgrey;
+    color: white;
+  }
   table {
     border-top: 1px solid black;
   }
-  th {
-    margin: 0;
+  table.dataTable thead th {
+    text-align: left;
+    padding: 5px 10px 5px 10px;
   }
-  td {
-      margin: 0;
-  }
-  tbody.list tr {
-    line-height: 0;
+  tbody.list tr td {
+    vertical-align: middle;
+    padding: 5px 10px 5px 10px;
   }
   tbody.list {
     cursor: pointer;
@@ -36,16 +52,46 @@
   tbody.list tr:hover {
     background-color: lightgray;
   }
+  .dataTables_wrapper .dataTables_info {
+    font-size: 90%;
+  }
+  .dataTables_wrapper .dataTables_filter {
+    font-size: 90%;
+  }
+  .dataTables_wrapper .dataTables_length {
+    font-size: 90%;
+  }
+  .dataTables_wrapper .dataTables_paginate {
+    font-size: 90%;
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 4px 8px 4px 8px;
+    text-decoration: none;
+      /* padding : 0px;
+      margin-left: 0px;
+      display: inline;
+      border: 0px; */
+  }
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+      /* border: 0px; */
+  }
 </style>
 <script type="text/javascript">
   $(document).ready(function(){
-    var plates = {{plates}};
+    // var plates = {#plates#};
     $("#btnNew").click(function(){
         // alert("button");
         alert(this.innerHTML);
         alert($(this).text());
     });
-    $('#plate_list').DataTable();
+    $('#plate_list').DataTable({
+      scrollY: 450,
+      scrollCollapse: true,
+      pageLength: 50
+    });
+    $('#plate_list tbody').on('click', 'tr', function(){
+        $(this).toggleClass('selected');
+    });
   });
   window.onload = function() {
     // items=items, pageno=pageno, total=total, plates=plates
@@ -54,35 +100,58 @@
 {% end %}
 
 {% block content %}
-<h3>Plate List</h3>
-<p id="title"></p>
-
+<h3 id="page_title">{{category[0].upper() + category[1:]}} Plate List</h3>
 <p>
   <!--span style="float:right"><button id="btnNew">Create new plate</button></span-->
-  <button id="btnNew">Create new</button>
-  <button id="btnNew">Delete selected</button>
-  <button id="btnNew">Batch-edit selected</button>
-  <button id="btnNew">Convert to DNA plate</button>
+  <button id="btnNew"><i class="fa fa-plus"></i> Create new</button>
+  <button id="btnDel"><i class="fa fa-remove"></i> Delete selected</button>
+  <button id="btnEdit"><i class="fa fa-edit"></i> Batch-edit selected</button>
+  <button id="btnDNA"><i class="fa fa-flask"></i> Convert to DNA plate</button>
+  <button id="btnEdit"><i class="fa fa-download"></i> Export list</button>
 </p>
 
-<table id="plate_list" width="100%">
+<table id="plate_list">
   <thead>
-    <tr width="100%">
-      <th width="10%">ID</th>
-      <th width="50%">Name</th>
-      <th width="10%">Type</th>
-      <th width="10%">Samples</th>
-      <th width="20%">Person</th>
+    <tr>
+      <th width="50px">ID</th>
+      <th width="225px">Name</th>
+      <th width="75px">Type</th>
+      <th width="50px">Filled</th>
+      <th width="50px">Study</th>
+      <th width="75px">Person</th>
+      <th width="75px">Date</th>
+      <th width="100px">Actions</th>
     </tr>
   </thead>
-  <tbody class="list" id="plate_list">
+  <tbody class="list">
     {% for plate in plates %}
     <tr>
-      <th><input type="checkbox" class="chkPlate" value="{{plate[0]}}">{{plate[0]}}</th>
-      <th>{{plate[1]}}</th>
-      <th>{{plate[2]}}</th>
-      <th>{{plate[3]}}</th>
-      <th>{{plate[4]}}</th>
+      <td>{{plate['id']}}</td>
+      <td>{{plate['name']}}</td>
+      <td title="{{plate['type'][1]}}">{{plate['type'][0]}}</td>
+      <td>{{plate['count']}}
+        <span style="font-size:80%">
+          {% set x = plate['study'][0] / float(plate['type'][1]) %}
+          {% if x == 1 %}
+          <i class="fa fa-battery-full"></i>
+          {% elif x >= 0.667 %}
+          <i class="fa fa-battery-three-quarters"></i>
+          {% elif x > 0.333 %}
+          <i class="fa fa-battery-half"></i>
+          {% elif x > 0 %}
+          <i class="fa fa-battery-quarter"></i>
+          {% else %}
+          <i class="fa fa-battery-empty"></i>
+          {% end %}
+      </span></td>
+      <td title="{{plate['study'][3]}}">{{plate['study'][1]}}</td>
+      <td>{{plate['person'] or "-"}}</td>
+      <td>{{plate['date'] or "-"}}</td>
+      <td>
+        <button class="inline" title="View/edit plate properties"><i class="fa fa-edit"></i></button>
+        <button class="inline" title="View/edit plate layout"><i class="fa fa-table"></i></button>
+        <button class="inline" title="Delete plate"><i class="fa fa-remove"></i></button>
+      </td>
     </tr>
     {% end %}
   </tbody>

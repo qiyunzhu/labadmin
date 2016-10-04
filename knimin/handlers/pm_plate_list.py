@@ -5,9 +5,15 @@ from knimin import db
 from knimin.handlers.access_decorators import set_access
 
 """
-This page displays a list of plates (sample, DNA, protocol, run)
-Columns:
-ID, name, by, on, DNA plate (link), [view/edit]
+This page displays a list of plates (sample, DNA, library, )
+Columns (general):
+    ID, Name, Type, # samples, Person, Date
+Columns for sample plate
+    <DNA plate> / [create], [view/edit]
+    edit properties
+    edit layouts
+Columns for DNA plate
+Columns for library plate
 view/edit (direct click)
 set atts (multiple) (for DNA plates only)
 """
@@ -17,13 +23,10 @@ set atts (multiple) (for DNA plates only)
 class PMPlateListHandler(BaseHandler):
     @authenticated
     def get(self):
-        plates = [list(x) for x in db.get_plate_list()]
-        for i in range(len(plates)):
-            for j in range(len(plates[i])):
-                if type(plates[i][j]) is long:
-                    plates[i][j] = int(plates[i][j])
+        category = self.get_argument("category", default="sample")
+        plates = db.get_sample_plate_list()
         self.render("pm_plate_list.html", currentuser=self.current_user,
-                    plates=plates)
+                    category=category, plates=plates)
 
     @authenticated
     def post(self):

@@ -20,41 +20,41 @@ class TestDataAccess(TestCase):
         except ValueError:
             pass
         # Populate some field options
-        sql = """INSERT INTO pm.plate_type (name, cols, rows, notes)
-                 VALUES ('96-well', 12, 8, 'Standard 96-well plate')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_robot (name) VALUES ('HOWE_KF1'),
-                 ('HOWE_KF2'), ('HOWE_KF3'), ('HOWE_KF4')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_tool (name) VALUES ('108379Z')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.processing_robot (name) VALUES ('ROBE'),
-                 ('RIKE'), ('JERE'), ('CARMEN')"""
-        sql = """INSERT INTO pm.tm300_8_tool (name) VALUES ('208484Z'),
-                 ('311318B'), ('109375A'), ('3076189')"""
-        sql = """INSERT INTO pm.tm50_8_tool (name) VALUES ('108364Z'),
-                 ('311426B'), ('311441B'), ('409172Z')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_kit_lot (name) VALUES ('PM16B11')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.master_mix_lot (name) VALUES ('14459')"""
-        db._con.execute(sql)
-        sql = """INSERT INTO pm.water_lot (name) VALUES ('RNBD9959')"""
-        db._con.execute(sql)
+#        sql = """INSERT INTO pm.plate_type (name, cols, rows, notes)
+#                 VALUES ('96-well', 12, 8, 'Standard 96-well plate')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.extraction_robot (name) VALUES ('HOWE_KF1'),
+#                 ('HOWE_KF2'), ('HOWE_KF3'), ('HOWE_KF4')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.extraction_tool (name) VALUES ('108379Z')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.processing_robot (name) VALUES ('ROBE'),
+#                 ('RIKE'), ('JERE'), ('CARMEN')"""
+#        sql = """INSERT INTO pm.tm300_8_tool (name) VALUES ('208484Z'),
+#                 ('311318B'), ('109375A'), ('3076189')"""
+#        sql = """INSERT INTO pm.tm50_8_tool (name) VALUES ('108364Z'),
+#                 ('311426B'), ('311441B'), ('409172Z')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.extraction_kit_lot (name) VALUES ('PM16B11')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.master_mix_lot (name) VALUES ('14459')"""
+#        db._con.execute(sql)
+#        sql = """INSERT INTO pm.water_lot (name) VALUES ('RNBD9959')"""
+#        db._con.execute(sql)
 
     def tearDown(self):
         db._clear_table('external_survey_answers', 'ag')
         db._revert_ready(['000023299'])
         # Remove populated field options
-        db._clear_table('plate_type', 'pm')
-        db._clear_table('extraction_robot', 'pm')
-        db._clear_table('extraction_tool', 'pm')
-        db._clear_table('processing_robot', 'pm')
-        db._clear_table('tm300_8_tool', 'pm')
-        db._clear_table('tm50_8_tool', 'pm')
-        db._clear_table('extraction_kit_lot', 'pm')
-        db._clear_table('master_mix_lot', 'pm')
-        db._clear_table('water_lot', 'pm')
+#        db._clear_table('plate_type', 'pm')
+#        db._clear_table('extraction_robot', 'pm')
+#        db._clear_table('extraction_tool', 'pm')
+#        db._clear_table('processing_robot', 'pm')
+#        db._clear_table('tm300_8_tool', 'pm')
+#        db._clear_table('tm50_8_tool', 'pm')
+#        db._clear_table('extraction_kit_lot', 'pm')
+#        db._clear_table('master_mix_lot', 'pm')
+#        db._clear_table('water_lot', 'pm')
 
     def test_pulldown_third_party(self):
         # Add survey answers
@@ -847,14 +847,19 @@ class TestDataAccess(TestCase):
         self.assertTrue(obs)
         db.delete_sample_plate([spid])
 
-    def test_get_plate_type(self):
-        obs = db.get_plate_type(0)
-        exp = {'plate_type_id': 1,
-               'name': '96-well',
+    def test_get_sample_plate_type(self):
+        # Get the default plate type
+        obs = db.get_sample_plate_type()
+        exp = {'name': '96-well',
                'cols': 12,
                'rows': 8,
                'notes': 'Standard 96-well plate'}
         self.assertDictEqual(obs, exp)
+        # Get an existing sample plate's type
+        spid = db.create_sample_plate(name='test_plate')
+        obs = db.get_sample_plate_type(spid)
+        self.assertDictEqual(obs, exp)
+        db.delete_sample_plate(spid)
 
     def test_get_plate_count(self):
         plate_id = db.create_plate('test_plate_1', 'test', '96-well')

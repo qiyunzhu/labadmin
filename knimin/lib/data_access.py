@@ -3394,31 +3394,29 @@ class KniminAccess(object):
                  WHERE pm.plate.plate_id = %s"""
         return tuple(self._con.execute_fetchone(sql, [plate_id]))
 
-    def get_plate_type(self, plate_id):
-        """Gets plate type attributes
+    def get_sample_plate_type(self, id=None):
+        """Gets plate type properties of a sample plate
 
         Parameters
         ----------
-        plate_id : int
-            0: first plate type in the table (96-well)
-            >0: plate type of an exisiting plate by id
+        id : int, optional
+            ID of an existing sample plate
+            If None, the first plate type will be selected
 
         Returns
         -------
         dict
-            Attributes of a plate type, currently including: plate_type_id,
-            name, cols, rows, notes
+            {name : str, cols : int, rows : int, notes : str}
+            Properties of a plate type:
+            Name, number of columns, number of rows, notes
         """
-        sql = ''
-        sql_args = []
-        if plate_id > 0:
-            sql = """SELECT pm.plate_type.* FROM pm.plate_type JOIN pm.plate
-                     USING (plate_type_id) WHERE plate_id = %s"""
-            sql_args = [plate_id]
-        else:
-            sql = """SELECT * FROM pm.plate_type WHERE plate_type_id = %s"""
-            sql_args = [1]
-        return self._con.execute_fetchdict(sql, sql_args)[0]
+        sql = """SELECT pm.plate_type.name, cols, rows, pm.plate_type.notes
+                 FROM pm.plate_type
+                 JOIN pm.sample_plate
+                 USING (plate_type_id)
+                 WHERE %s IS NULL OR sample_plate_id = %s
+                 LIMIT 1"""
+        return self._con.execute_fetchdict(sql, [id, id])[0]
 
     def get_plate_count(self):
         """Gets total number of plates
@@ -3431,8 +3429,8 @@ class KniminAccess(object):
         sql = """SELECT COUNT(*) FROM pm.sample_plate"""
         return self._con.execute_fetchone(sql)[0]
 
-    def get_plate_list(self, limit=0, offset=0):
-        """Gets basic information of a range of plates
+    def get_sample_plate_list(self, limit=0, offset=0):
+        """Gets basic information of a range of sample plates
 
         Parameters
         ----------
@@ -3445,26 +3443,62 @@ class KniminAccess(object):
 
         Returns
         -------
-        list of tuple of (int, str, str, int, str)
-            Plate id, plate name, plate type name, number of samples, email
+        list of dict
+            {id : int, name : str, type : list of [str, int], count : int,
+            person : str, date : datetime)}
+            Plate id, plate name, plate type (name and total number of wells),
+            number of samples filled, email, date
         """
         sql_args = []
         sql = """SELECT sample_plate_id, sample_plate.name, plate_type.name,
-                    (SELECT COUNT(*) FROM pm.sample_plate_layout
-                     WHERE pm.sample_plate_layout.sample_plate_id
-                        = pm.sample_plate.sample_plate_id),
-                     email
+                        cols, rows, email, created_on, x.sample_count,
+                        x.study_freq, x.study_id, x.qiita_study_id, x.title
                  FROM pm.sample_plate
-                 JOIN pm.plate_type
-                 USING (plate_type_id)
+                 JOIN pm.plate_type USING (plate_type_id)
+                 JOIN (SELECT study_id, qiita_study_id, title, sample_plate_id,
+                              COUNT(study_id) AS study_freq,
+                              COUNT(sample_id) AS sample_count
+                       FROM pm.study
+                       JOIN pm.study_sample USING (study_id)
+                       JOIN pm.sample_plate_layout USING (sample_id)
+                       JOIN pm.sample_plate USING (sample_plate_id)
+                       GROUP BY study_id, sample_plate_id
+                       ORDER BY COUNT(study_id) DESC) AS x
+                 USING (sample_plate_id)
                  ORDER BY sample_plate_id"""
+# Previous solution:
+#        sql = """SELECT sample_plate_id, sample_plate.name, plate_type.name,
+#                        cols, rows, email, created_on,
+#                        (SELECT COUNT(*) FROM pm.sample_plate_layout
+#                         JOIN pm.study_sample USING (sample_id)
+#                         WHERE pm.sample_plate_layout.sample_plate_id
+#                               = pm.sample_plate.sample_plate_id)
+#                 FROM pm.sample_plate
+#                 JOIN pm.plate_type
+#                 USING (plate_type_id)
+#                 ORDER BY sample_plate_id"""
         if limit:
             sql += " LIMIT %s"
             sql_args.append(limit)
         if offset:
             sql += " OFFSET %s"
             sql_args.append(offset)
-        return [tuple(x) for x in self._con.execute_fetchall(sql, sql_args)]
+        res = self._con.execute_fetchall(sql, sql_args)
+        # list of dict
+        plates = []
+        for row in res:
+            plates.append({'id': int(row[0]),
+                           'name': row[1],
+                           'type': [row[2], row[3]*row[4]],
+                           'person': row[5],
+                           'date': row[6],
+                           'count': row[7],
+                           'study': [row[8], row[9], row[10], row[11]]})
+            #if row[7]:
+            #else:
+            #    plates[-1]['study'] = '(undefined)'
+        return plates
+        # return [tuple(x) for x in self._con.execute_fetchall(sql, sql_args)]
 
     def set_deposited_ebi(self):
         """Updates barcode deposited status by checking EBI"""
