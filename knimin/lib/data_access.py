@@ -2467,7 +2467,7 @@ class KniminAccess(object):
         Returns
         -------
         int
-            Id of the option
+            ID of the option
 
         Raises
         ------
@@ -2489,6 +2489,7 @@ class KniminAccess(object):
         Parameters
         ----------
         study_id : int
+            ID of the study
 
         Raises
         ------
@@ -2504,10 +2505,16 @@ class KniminAccess(object):
 
         Parameters
         ----------
-        qiita_study_id : int
-        title : str
-        skip_id : int
+        qiita_study_id : int, optional
+            Qiita study ID of the study
+        title : str, optional
+            Title of the study
+            Either qiita_study_id or title must be specified as the identifier
+            of a study
+        skip_id : int, optional
             Skip this study ID in searching
+            In function create_study, this is not used
+            In function edit_study, this is the current study to be edited
 
         Raises
         ------
@@ -2550,10 +2557,15 @@ class KniminAccess(object):
 
         Parameters
         ----------
-        qiita_study_id : int
-        title : str
-        alias : str
-        notes : str
+        qiita_study_id : int, optional
+            Assigns a Qiita study ID to the study
+        title : str, optional
+            Assigns a title to the study
+            Either qiita_study_id or title must be specified
+        alias : str, optional
+            Assigns an alias to the study
+        notes : str, optional
+            Makes notes of the study
 
         Returns
         -------
@@ -2577,10 +2589,15 @@ class KniminAccess(object):
         ----------
         study_id : int
             ID of the study to edit
-        qiita_study_id : int
-        title : str
-        alias : str
-        notes : str
+        qiita_study_id : int, optional
+            Assigns a Qiita study ID to the study
+        title : str, optional
+            Assigns a title to the study
+            Either qiita_study_id or title must be specified
+        alias : str, optional
+            Assigns an alias to the study
+        notes : str, optional
+            Makes notes of the study
         """
         self._study_exists(study_id)
         self._study_is_unique(qiita_study_id, title, study_id)
@@ -2599,11 +2616,13 @@ class KniminAccess(object):
         Parameters
         ----------
         study_id : int
+            ID of the study to read
 
         Returns
         -------
         dict
             {qiita_study_id : int, title : str, alias : str, notes : str}
+            Properties of the study: Qiita study ID, title, alias and notes
 
         Raises
         ------
@@ -2625,6 +2644,7 @@ class KniminAccess(object):
         Parameters
         ----------
         study_id : int
+            ID of the study to delete
         """
         self._study_exists(study_id)
         with TRN:
@@ -2639,10 +2659,12 @@ class KniminAccess(object):
         Parameters
         ----------
         sample_id : str
+            ID of the sample to check
 
         Returns
         ------
         bool
+            Whether the sample exists
         """
         sql = """SELECT EXISTS (SELECT 1 FROM pm.sample
                                 WHERE sample_id = %s)"""
@@ -2654,6 +2676,7 @@ class KniminAccess(object):
         Parameters
         ----------
         barcode : str
+            Barcode to check
 
         Raises
         ------
@@ -2671,11 +2694,16 @@ class KniminAccess(object):
         Parameters
         ----------
         samples : list of dict
+            A list of samples to create and their properties to set
             {
-             id : str (mandatory),
-             is_blank : bool (optional, default: False),
-             barcode : str (optional),
-             notes : str (optional)
+             id : str,
+                Assigns an ID to the sample
+             is_blank : bool, optional, default: False,
+                Specifies whether the sample is blank
+             barcode : str, optional,
+                Assigns a barcode to the sample
+             notes : str, optional
+                Makes notes of the sample
             }
 
         Raises
@@ -2706,12 +2734,16 @@ class KniminAccess(object):
         Parameters
         ----------
         samples : list of dict
+            A list of samples to edit and their properties to set
             {
              id : str,
                 ID of the sample to edit
-             is_blank : bool (optional, default: False),
-             barcode : str (optional),
-             notes : str (optional)
+             is_blank : bool, optional, default: False,
+                Whether the sample is blank
+             barcode : str, optional,
+                Assigns a barcode to the sample
+             notes : str, optional
+                Makes notes of the sample
             }
 
         Raises
@@ -2742,13 +2774,15 @@ class KniminAccess(object):
         Parameters
         ----------
         ids : list of str
-            Sample IDs to read
+            IDs of the samples to read
 
         Returns
         -------
         list of dict
             {is_blank : bool, barcode : str, notes : str}
-            In the same order as sample IDs
+            List of properties of the samples read: Whether this sample is
+            blank, barcode, and notes
+            The list is in the same order as sample IDs
 
         Raises
         ------
@@ -2773,12 +2807,15 @@ class KniminAccess(object):
         Parameters
         ----------
         ids : list of str
-            Sample IDs to delete
+            IDs of the samples to delete
 
         Raises
         ------
         ValueError
             If at least one sample ID does not exist
+            If at least one sample is associated with a sample plate (in which
+            case, the sample plate has to be deleted prior to the deletion of
+            the sample)
         """
         with TRN:
             for sample_id in ids:
@@ -2806,6 +2843,7 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate to check
 
         Raises
         ------
@@ -2823,8 +2861,12 @@ class KniminAccess(object):
         Parameters
         ----------
         name : str
-        skip_id : int
-            Skip this ID in searching
+            Name to be assigned to a new or existing sample plate
+        skip_id : int, optional
+            Skips this sample plate ID in searching
+            In function create_sample_plate, this is not used
+            In function edit_sample_plate, this is the current sample plate to
+            be edited
 
         Raises
         ------
@@ -2845,7 +2887,8 @@ class KniminAccess(object):
 
         Parameters
         ----------
-        barcode : str
+        email : str
+            Email as an identifier of the user
 
         Raises
         ------
@@ -2857,14 +2900,13 @@ class KniminAccess(object):
         if not self._con.execute_fetchone(sql, [email])[0]:
             raise ValueError('Email %s does not exist.' % email)
 
-    def _plate_type_name_to_id(self, name):
+    def _plate_type_name_to_id(self, name=None):
         """Gets plate type ID by name
 
         Parameters
         ----------
-        name : str
-            Name of the plate type. If None, ID of the first plate type (i.e.,
-            96-well) will return
+        name : str, optional
+            Plate type name. If None, the first plate type will be selected
 
         Returns
         -------
@@ -2876,20 +2918,15 @@ class KniminAccess(object):
         ValueError
             If the plate type name does not exist
         """
-        if name:
-            sql = """SELECT plate_type_id
-                     FROM pm.plate_type
-                     WHERE name = %s"""
-            res = self._con.execute_fetchone(sql, [name])
-            if not res:
-                raise ValueError('Plate type %s does not exist.' % repr(name))
-            return res[0]
-        else:
-            sql = """SELECT plate_type_id
-                     FROM pm.plate_type
-                     ORDER BY plate_type_id ASC LIMIT 1"""
-            res = self._con.execute_fetchone(sql)
-            return res[0]
+        sql = """SELECT plate_type_id
+                 FROM pm.plate_type
+                 WHERE %s IS NULL OR name = %s
+                 ORDER BY plate_type_id ASC
+                 LIMIT 1"""
+        res = self._con.execute_fetchone(sql, [name, name])
+        if not res:
+            raise ValueError('Plate type %s does not exist.' % repr(name))
+        return res[0]
 
     def create_sample_plate(self, name, email=None, created_on=None,
                             notes=None, plate_type=None):
@@ -2898,11 +2935,16 @@ class KniminAccess(object):
         Parameters
         ----------
         name : str
-        email : str
-        created_on: datetime
-        notes : str
-        plate_type : str
-            If None, the first plate type (i.e., 96-well) will be used
+            Assigns a name to the sample plate
+        email : str, optional
+            Specifies who (by Email) created the sample plate
+        created_on: datetime, optional
+            Specifies when (by date) was the sample plate created
+        notes : str, optional
+            Makes notes of the sample plate
+        plate_type : str, optional
+            Defines the plate type of the sample plate
+            If None, the first plate type will be used
 
         Returns
         -------
@@ -2931,14 +2973,21 @@ class KniminAccess(object):
         id : int
             ID of the sample plate to edit
         name : str
-        email : str
-        created_on: datetime
-        notes : str
-        plate_type : str
-            If None, the first plate type (i.e., 96-well) will be used
+            Assigns a name to the sample plate
+        email : str, optional
+            Specifies who (by Email) created the sample plate
+        created_on: datetime, optional
+            Specifies when (by date) was the sample plate created
+        notes : str, optional
+            Makes notes of the sample plate
+        plate_type : str, optional
+            Defines the plate type of the sample plate
+            If None, the first plate type will be used
         """
         self._sample_plate_exists(id)
         self._sample_plate_is_unique(name, id)
+        if email:
+            self._email_exists(email)
         plate_type_id = self._plate_type_name_to_id(plate_type)
         with TRN:
             sql = """UPDATE pm.sample_plate
@@ -2954,12 +3003,15 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate to read
 
         Returns
         -------
         dict
             {name : str, email : str, created_on: datetime, notes : str,
              plate_type : str}
+            Properties of the sample plate: name, who created it, when it was
+            created, notes, and plate type name
         """
         self._sample_plate_exists(id)
         sql = """SELECT p.name, p.email, p.created_on, p.notes,
@@ -2967,47 +3019,23 @@ class KniminAccess(object):
                  FROM pm.sample_plate p
                  JOIN pm.plate_type USING (plate_type_id)
                  WHERE sample_plate_id = %s"""
-#        sql = """SELECT pm.plate.plate_id,
-#                    pm.plate.name,
-#                    pm.plate.email,
-#                    pm.plate_type.name,
-#                    pm.template.name,
-#                    pm.plate.linker_seq,
-#                    pm.extraction_kit_lot.name,
-#                    pm.extraction_robot.name,
-#                    pm.tm1000_8_tool.name,
-#                    pm.master_mix_lot.name,
-#                    pm.water_lot.name,
-#                    pm.processing_robot.name,
-#                    pm.tm300_8_tool.name,
-#                    pm.tm50_8_tool.name,
-#                    pm.plate.notes
-#                 FROM pm.plate
-#                 JOIN pm.plate_type USING (plate_type_id)
-#                 LEFT JOIN pm.template USING (template_id)
-#                 LEFT JOIN pm.extraction_kit_lot USING (extraction_kit_lot_id)
-#                 LEFT JOIN pm.extraction_robot USING (extraction_robot_id)
-#                 LEFT JOIN pm.tm1000_8_tool USING (tm1000_8_tool_id)
-#                 LEFT JOIN pm.master_mix_lot USING (master_mix_lot_id)
-#                 LEFT JOIN pm.water_lot USING (water_lot_id)
-#                 LEFT JOIN pm.processing_robot USING (processing_robot_id)
-#                 LEFT JOIN pm.tm300_8_tool USING (tm300_8_tool_id)
-#                 LEFT JOIN pm.tm50_8_tool USING (tm50_8_tool_id)
-#                 WHERE pm.plate.plate_id = %s"""
         res = self._con.execute_fetchone(sql, [id])
         return dict(zip(['name', 'email', 'created_on', 'notes', 'plate_type'],
                         res))
 
     def _sample_plate_layout_exists(self, id):
-        """Checks whether the layout of a sample plate ID exists
+        """Checks whether the layout of a sample plate by ID (at least one
+        sample-to-well record) exists
 
         Parameters
         ----------
         id : int
+            ID of the sample plate whose layout is to be checked
 
         Returns
         ------
         bool
+            Whether the layout exists
         """
         sql = """SELECT EXISTS (SELECT 1 FROM pm.sample_plate_layout
                                 WHERE sample_plate_id = %s)"""
@@ -3019,6 +3047,7 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate whose layout is to be deleted
         """
         with TRN:
             sql = """DELETE FROM pm.sample_plate_layout
@@ -3031,8 +3060,11 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate whose layout is to be written
         layout : list of dict
             {sample_id : str, col : int, row : int, name : str, notes : str}
+            A list of sample-to-well records, each of which includes:
+            Sample ID, column number, row number, name, and notes
         """
         self._sample_plate_exists(id)
         if self._sample_plate_layout_exists(id):
@@ -3055,12 +3087,15 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate whose layout is to be read
 
         Returns
         -------
         list of dict
             {sample_id : str, col : int, row : int, name : str, notes : str}
-            Sorted by column then by row in ascending order
+            A list of sample-to-well records, each of which includes:
+            Sample ID, column number, row number, name, and notes
+            The list is sorted by column then by row in ascending order
         """
         self._sample_plate_exists(id)
         if not self._sample_plate_layout_exists(id):
@@ -3077,6 +3112,7 @@ class KniminAccess(object):
         Parameters
         ----------
         id : int
+            ID of the sample plate to delete
         """
         self._sample_plate_exists(id)
         if self._sample_plate_layout_exists(id):
