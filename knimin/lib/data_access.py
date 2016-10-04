@@ -2639,7 +2639,7 @@ class KniminAccess(object):
                 'notes': res[3]}
 
     def delete_study(self, study_id):
-        """Deletes an existing study
+        """Deletes an existing study and dissociates samples from it
 
         Parameters
         ----------
@@ -2648,6 +2648,7 @@ class KniminAccess(object):
         """
         self._study_exists(study_id)
         with TRN:
+            self._dissociate_all_samples_from_study(study_id)
             sql = """DELETE FROM pm.study
                      WHERE study_id = %s
                      RETURNING study_id"""
@@ -2813,15 +2814,22 @@ class KniminAccess(object):
         ------
         ValueError
             If at least one sample ID does not exist
-            If at least one sample is associated with a sample plate (in which
-            case, the sample plate has to be deleted prior to the deletion of
-            the sample)
+            If at least one sample is associated with a study
+            If at least one sample is associated with a sample plate
+            In the above two cases, the study / sample plate has to be deleted
+            prior to the deletion of the sample)
         """
         with TRN:
             for sample_id in ids:
                 if not self._sample_exists(sample_id):
                     raise ValueError('Sample ID %s does not exist.'
                                      % sample_id)
+                res = self.get_studies_associated_with_samples([sample_id])[0]
+                if res:
+                    study_ids = ', '.join([str(x) for x in res])
+                    raise ValueError('Sample ID %s cannot be deleted because '
+                                     'it is associated with studi(es) %s.'
+                                     % (sample_id, study_ids))
                 sql = """SELECT sample_plate_id
                          FROM pm.sample_plate_layout
                          WHERE sample_id = %s"""
@@ -2836,6 +2844,155 @@ class KniminAccess(object):
                          WHERE sample_id = %s
                          RETURNING sample_id"""
                 TRN.add(sql, [sample_id])
+
+    def _study_sample_are_associated(self, study_id, sample_id):
+        """Checks whether a study and a sample are associated
+
+        Parameters
+        ----------
+        study_id : str
+            ID of the study to check
+        sample_id : str
+            ID of the sample to check
+
+        Returns
+        ------
+        bool
+            Whether they are associated
+        """
+        sql = """SELECT EXISTS (SELECT 1 FROM pm.study_sample
+                                WHERE study_id = %s
+                                AND sample_id = %s)"""
+        return self._con.execute_fetchone(sql, [study_id, sample_id])[0]
+
+    def associate_samples_with_study(self, study_id, sample_ids):
+        """Creates associations between one or more samples and one study
+
+        Parameters
+        ----------
+        study_id : int
+            ID of the study
+        sample_ids : list of str
+            IDs of the samples
+
+        Raises
+        ------
+        ValueError
+            If the study ID does not exist
+            If the study and the sample are already associated
+        """
+        self._study_exists(study_id)
+        with TRN:
+            for sample_id in sample_ids:
+                if not self._sample_exists(sample_id):
+                    raise ValueError('Sample ID %s does not exist.'
+                                     % sample_id)
+                if self._study_sample_are_associated(study_id, sample_id):
+                    raise ValueError('Study ID %s and sample ID %s are already'
+                                     ' associated.' % (study_id, sample_id))
+                sql = """INSERT INTO pm.study_sample (study_id, sample_id)
+                         VALUES (%s, %s)"""
+                TRN.add(sql, [study_id, sample_id])
+
+    def dissociate_samples_from_study(self, study_id, sample_ids):
+        """Deletes the associations between one or more samples and one study
+
+        Parameters
+        ----------
+        study_id : int
+            ID of the study
+        sample_ids : list of str
+            IDs of the samples
+
+        Raises
+        ------
+        ValueError
+            If the study ID does not exist
+            If the study and the sample are not associated
+        """
+        self._study_exists(study_id)
+        with TRN:
+            for sample_id in sample_ids:
+                if not self._sample_exists(sample_id):
+                    raise ValueError('Sample ID %s does not exist.'
+                                     % sample_id)
+                if not self._study_sample_are_associated(study_id, sample_id):
+                    raise ValueError('Study ID %s and sample ID %s are not '
+                                     'associated.' % (study_id, sample_id))
+                sql = """DELETE FROM pm.study_sample
+                         WHERE study_id = %s AND sample_id = %s"""
+                TRN.add(sql, [study_id, sample_id])
+
+    def get_samples_associated_with_study(self, study_id):
+        """Retrieves IDs of all samples associated with a study (if any)
+
+        Parameters
+        ----------
+        study_id : int
+            ID of the study
+
+        Returns
+        ------
+        list of str
+            Sorted list of sample IDs associated with the study
+        """
+        self._study_exists(study_id)
+        sql = """SELECT sample_id FROM pm.study_sample WHERE study_id = %s
+                 ORDER BY sample_id"""
+        res = self._con.execute_fetchall(sql, [study_id])
+        if res is not None:
+            return [x[0] for x in res]
+        else:
+            return []
+
+    def get_studies_associated_with_samples(self, sample_ids):
+        """Retrieves IDs of all samples associated with a study (if any)
+
+        Parameters
+        ----------
+        sample_id : list of str
+            IDs of the samples
+
+        Returns
+        ------
+        list of list of int
+            List of sorted list of study IDs associated with each sample in
+            the same order as sample IDs
+
+        Raises
+        ------
+        ValueError
+            If at least one sample ID does not exist
+        """
+        associations = []
+        for sample_id in sample_ids:
+            if not self._sample_exists(sample_id):
+                raise ValueError('Sample ID %s does not exist.' % sample_id)
+            sql = """SELECT study_id FROM pm.study_sample WHERE sample_id = %s
+                     ORDER BY study_id"""
+            res = self._con.execute_fetchall(sql, [sample_id])
+            if res is not None:
+                associations.append([x[0] for x in res])
+            else:
+                associations.append([])
+        return associations
+
+    def _dissociate_all_samples_from_study(self, study_id):
+        """Deletes all associations between samples and a study (if any)
+
+        Parameters
+        ----------
+        study_id : int
+            ID of the study
+        """
+        with TRN:
+            sql = """SELECT EXISTS (SELECT 1 FROM pm.study_sample
+                                    WHERE study_id = %s)"""
+            TRN.add(sql, [study_id])
+            if TRN.execute_fetchlast():
+                sql = """DELETE FROM pm.study_sample
+                         WHERE study_id = %s"""
+                TRN.add(sql, [study_id])
 
     def _sample_plate_exists(self, id):
         """Confirms that a sample plate ID exists
