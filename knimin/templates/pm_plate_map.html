@@ -7,6 +7,7 @@
 {% autoescape None %}
 <script type="text/javascript" src="/static/js/labmin.js"></script>
 <script type="text/javascript" src="/static/vendor/js/jquery.validate.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 <style>
   p {
     font-weight: bold;
@@ -19,6 +20,8 @@
   #plate_map {
     width: 100%;
     table-layout: fixed;
+    /* border-spacing: 0; */
+    border: 1px solid black;
     border-collapse: collapse;
   }
   #plate_map td {
@@ -49,6 +52,8 @@
 <script type="text/javascript">
 
   // Retrieve data
+  // Target object
+  var target = {{dumps(target)}};
   // Plate ID
   var id = {{dumps(id)}};
   // Plate info: name, email, created_on, notes
@@ -67,13 +72,8 @@
   }
 
   $(document).ready(function(){
-    $("input.cell").on("click", function () {
-      alert("wahhhhh");
-      // alert($(this).value());
-    });
-  });
 
-  window.onload = function() {
+    // Render display items
     if (id > 0) {  // View or edit an existing plate
       // The plate map is represented as map[col_row] => sample
       $("#plate_id").html("Plate # " + id.toString() + ": ");
@@ -102,43 +102,98 @@
           row_html += "<td>" + String.fromCharCode(64 + i); + "</td>";
         } else {
           var well = j.toString() + "_" + i.toString();
-          var sample = {};
+          var sample = {'sample_id': ''};
           if (well2id.hasOwnProperty(well)) {
             sample = layout[well2id[well]];
           }
-          row_html += "<td><input class='cell', type='text', data-sample='" + sample['sample_id'] + "'></td>";
+          row_html += ("<td><input class='cell', type='text', data-sample-\
+                        original='" + sample['sample_id'] + "', data-sample-\
+                        current='" + sample['sample_id'] + "'></td>");
         }
       }
       row.innerHTML = row_html;
     }
+
     $("input.cell").each(function() {
-        $(this).val($(this).attr("data-sample").replace(/\b0+/g, ''));
+        $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
     });
-  }
+
+    // $("input.cell").on("click", function () {
+      // alert($(this).val());
+      // $(this).parent().css("border-color", "red");
+    // });
+    $("input.cell").on("focus", function () {
+      var cell = $(this).parent();
+      cell.closest('tr').children('td:first').css("background-color", "darkkhaki");
+      cell.parent().siblings().first().children(':nth-child(' + (cell.index() + 1) + ')').css("background-color", "darkkhaki");
+      $(this).val($(this).attr("data-sample-current"));
+      $(this).select();
+    });
+    $("input.cell").on("blur", function () {
+      var cell = $(this).parent();
+      cell.closest('tr').children('td:first').css("background-color", "");
+      cell.parent().siblings().first().children(':nth-child(' + (cell.index() + 1) + ')').css("background-color", "");
+      $(this).attr("data-sample-current", $(this).val());
+      $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
+    });
+    $("input.cell").on("input", function () {
+      var x = $(this).attr("data-sample-original");
+      if (x && $(this).val() != x) {
+        $(this).css("color", "firebrick");
+      } else {
+        $(this).css("color", "black");
+      }
+    });
+    $("input.cell").on("keypress", function (e) {
+      var cc = $(this).parent();  // current cell
+      var tc = "";  // target cell
+      if(e.which == 13){  // Enter
+        $(this).blur();
+        tc = cc.closest('tr').next().find('td:eq(' + cc.index() + ')');
+      } else if (e.which == 27) {  // Esc
+        $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
+        $(this).blur();
+      } else if (e.which == 9) {  // Tab
+        e.preventDefault();
+        if (!e.shiftKey) {  // without Shift
+          tc = cc.next();
+        } else {
+          tc = cc.prev();
+        }
+      }
+      if (tc.length > 0) {
+        cc = tc;
+        cc.children().focus();
+      }
+    });
+  });
 
 </script>
 {% end %}
 
 {% block content %}
-<h3>Plate Editor</h3>
+<h3 id="page_title">{{target[0].upper() + target[1:]}} Plate Layout</h3>
 <div style="padding-left:20px;padding-right:20px;">
 <p>
   <label id="plate_id">Create new plate: </label>
   <input type="text", id="plate_name", style="width:200px", data-plate-id=0>
   <label> by </label>
-  <input type="text", id="plated_by", style="width:100px", data-plated-by="" readonly>
+  <input type="text", id="plated_by", style="width:100px", data-plated-by="">
+  <label> on </label>
+  <input type="text", id="plated_on", style="width:100px", data-plated-on="">
   <span style="float:right">
     <button onclick="location.href='/pm_plate_map/?id=1';">&lt;&lt;</button>
     <button onclick="location.href='/pm_plate_map/?id='+(id-1).toString();">&lt;</button>
     <button onclick="location.href='/pm_plate_map/?id='+(id+1).toString();">&gt;</button>
     <button onclick="location.href='/pm_plate_map/?id=-1';">&gt;&gt;</button>
     |
-    <button onclick="location.href='/pm_plate_map/?id=0';">Create new plate</button>
+    <button onclick="location.href='/pm_plate_map/?target={{target}}&id=0';"><i class="fa fa-plus"></i> Create new</button>
   </span>
 </p>
 <div id="div_plate_map">
   <table id="plate_map"></table>
 </div>
-<p><button>Save changes</button></p>
+<div id="xxx"></div>
+<p><button><i class="fa fa-save"></i> Save changes</button></p>
 </div>
 {% end %}

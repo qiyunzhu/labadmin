@@ -147,7 +147,7 @@
       <td>{{plate['person'] or "-"}}</td>
       <td>{{plate['date'] or "-"}}</td>
       <td>
-        <button class="inline" title="View/edit plate properties"><i class="fa fa-edit"></i></button>
+        <button class="inline" title="View/edit plate properties" onclick="location.href='/pm_plate_map/?target=sample&id={{plate['id']}}';"><i class="fa fa-edit"></i></button>
         <button class="inline" title="View/edit plate layout"><i class="fa fa-table"></i></button>
         <button class="inline" title="Delete plate"><i class="fa fa-remove"></i></button>
       </td>
