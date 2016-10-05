@@ -3171,14 +3171,12 @@ class KniminAccess(object):
             created, notes, and plate type name
         """
         self._sample_plate_exists(id)
-        sql = """SELECT p.name, p.email, p.created_on, p.notes,
-                    pm.plate_type.name
+        sql = """SELECT p.name, email, created_on, p.notes,
+                        pm.plate_type.name AS plate_type
                  FROM pm.sample_plate p
                  JOIN pm.plate_type USING (plate_type_id)
                  WHERE sample_plate_id = %s"""
-        res = self._con.execute_fetchone(sql, [id])
-        return dict(zip(['name', 'email', 'created_on', 'notes', 'plate_type'],
-                        res))
+        return self._con.execute_fetchdict(sql, [id])[0]
 
     def _sample_plate_layout_exists(self, id):
         """Checks whether the layout of a sample plate by ID (at least one

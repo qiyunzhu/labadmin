@@ -1,6 +1,5 @@
 <!-- The Plate Mapper module -->
 <!-- Plate list -->
-<!-- Qiyun Zhu -->
 
 {% extends logged_in_index.html %}
 {% block head %}
@@ -100,7 +99,7 @@
 {% end %}
 
 {% block content %}
-<h3 id="page_title">{{category[0].upper() + category[1:]}} Plate List</h3>
+<h3 id="page_title">{{target[0].upper() + target[1:]}} Plate List</h3>
 <p>
   <!--span style="float:right"><button id="btnNew">Create new plate</button></span-->
   <button id="btnNew"><i class="fa fa-plus"></i> Create new</button>

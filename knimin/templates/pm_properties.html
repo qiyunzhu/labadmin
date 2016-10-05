@@ -1,10 +1,9 @@
 <!-- The Plate Mapper module -->
-<!-- Plate map -->
+<!-- View / edit properties of objects -->
 
 {% extends logged_in_index.html %}
 {% block head %}
 {% from json import dumps %}
-{% autoescape None %}
 <script type="text/javascript" src="/static/js/labmin.js"></script>
 <script type="text/javascript" src="/static/vendor/js/jquery.validate.min.js"></script>
 <style>
@@ -16,57 +15,59 @@
     text-decoration: none;
     font-size: 80%;
   }
-  #plate_map {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
+  #plate_info {
+    /*border-collapse: collapse;*/
   }
-  #plate_map td {
-    text-align: center;
-    vertical-align: middle;
-    border: 1px solid black;
+  #plate_info td {
     margin: 0;
     padding: 0;
-    background-color: rgba(255,247,188,0.75);
   }
-  input.cell {
+  #plate_info td:nth-child(odd) {
+    width: 150px;
+    text-align: right;
+    padding-right: 20px;
+    font-size: 80%;
+    vertical-align: middle;
+  }
+  #plate_info td:nth-child(even) {
+    width: 300px;
+    border: 1px solid black;
+  }
+  input.field {
     display: block;
-    text-align: center;
+    text-align: left;
     padding: 0;
     margin: 0;
     border: 0;
     width: 100%;
     border-radius: 0;
     line-height: 2.5;
+    background-color: rgba(255,247,188,0.25);
   }
-  input.cell:focus {
+  input.field:focus {
     outline: none;
-    /*border-color: #719ECE;*/
-    box-shadow: inset 0 0 5px rgb(44,127,184); /*#719ECE;*/
+    border-color: #719ECE;
+    box-shadow: 0 0 20px #719ECE;
     background-color: white;
   }
 </style>
 <script type="text/javascript">
-
-  // Retrieve data
-  // Plate ID
-  var id = {{dumps(id)}};
-  // Plate info: name, email, created_on, notes
-  var info = {{dumps(info)}};
-  // Plate type: name, cols, rows, notes
-  var type = {{dumps(type)}};
-  // Plate layout: sample_id, col, row, name, notes
-  var layout = {{dumps(layout)}};
-  // Current user
-  var currentuser = {{dumps(currentuser)}};
-
-  // Process data
-  var well2id = {};
-  for (var i = 0; i < layout.length; i++) {
-    well2id[layout[i]['col'].toString() + "_" + layout[i]['row'].toString()] = i;
-  }
+  var id;
+  var info;
+  var type;
+  var currentuser;
+  var map = {};  // col_row => sample_id
+  var fields = ['Plate ID', 'Name', 'Plated by', 'Plate type',
+                'Barcode template', 'Linker sequence', 'Extraction kit lot',
+                'Extraction robot', 'TM1000-8 tool', 'Master mix lot',
+                'Water lot', 'Processing robot', 'TM300-8 tool',
+                'TM50-8 tool', 'Notes'];
 
   $(document).ready(function(){
+    id = {{id}};
+    type = {{type}};
+    info = {{info}};
+    currentuser = "{{currentuser}}";
     $("input.cell").on("click", function () {
       alert("wahhhhh");
       // alert($(this).value());
@@ -74,13 +75,39 @@
   });
 
   window.onload = function() {
-    if (id > 0) {  // View or edit an existing plate
+    if (id > 0) {  // View/edit an existing plate
       // The plate map is represented as map[col_row] => sample
+      var map0 = {{map}};
+      for (var i = 0; i < map0.length; i++) {
+        map[map0[i][0] + "_" + map0[i][1]] = map0[i][2];
+      }
       $("#plate_id").html("Plate # " + id.toString() + ": ");
-      $("#plate_name").val(info['name']);
-      $("#plated_by").val(info['email']);
+      $("#plate_name").val(info[1]);
+      $("#plated_by").val(info[2]);
     } else {  // Create a new plate
       $("#plated_by").val(currentuser);
+    }
+
+    // Generate plate title
+    var name = info[1];
+    var email = info[2]
+
+    // Generate plate info
+
+    var table = document.getElementById("plate_info");
+    var row;
+    for (var i = 4; i < 15; i++) {
+      if (i % 2 == 0) {
+        row = table.insertRow();
+      }
+      var cell = row.insertCell(-1);
+      cell.innerHTML = fields[i];
+      var cell = row.insertCell(-1);
+      if (i == 14) {
+        cell.colSpan = "3";
+      }
+      var field = fields[i][0];
+      cell.innerHTML = "<input class='field', type='text', id='field_" + i.toString() + "', value='" + info[i] + "'>";
     }
 
     // Generate plate map
@@ -102,11 +129,11 @@
           row_html += "<td>" + String.fromCharCode(64 + i); + "</td>";
         } else {
           var well = j.toString() + "_" + i.toString();
-          var sample = {};
-          if (well2id.hasOwnProperty(well)) {
-            sample = layout[well2id[well]];
+          var sample = "";
+          if (map.hasOwnProperty(well)) {
+            sample = map[well];
           }
-          row_html += "<td><input class='cell', type='text', data-sample='" + sample['sample_id'] + "'></td>";
+          row_html += "<td><input class='cell', type='text', data-sample='" + sample + "'></td>";
         }
       }
       row.innerHTML = row_html;
@@ -136,8 +163,9 @@
     <button onclick="location.href='/pm_plate_map/?id=0';">Create new plate</button>
   </span>
 </p>
-<div id="div_plate_map">
-  <table id="plate_map"></table>
+<p><button onclick="$('#div_plate_info').toggle();">Plate Info</button></p>
+<div id="div_plate_info">
+  <table id="plate_info"></table>
 </div>
 <p><button>Save changes</button></p>
 </div>

@@ -23,10 +23,10 @@ set atts (multiple) (for DNA plates only)
 class PMPlateListHandler(BaseHandler):
     @authenticated
     def get(self):
-        category = self.get_argument("category", default="sample")
+        target = self.get_argument("target", default="sample")
         plates = db.get_sample_plate_list()
         self.render("pm_plate_list.html", currentuser=self.current_user,
-                    category=category, plates=plates)
+                    target=target, plates=plates)
 
     @authenticated
     def post(self):
