@@ -13,6 +13,9 @@
   p {
     font-weight: bold;
   }
+  a {
+    color: black;
+  }
   button {
     padding: 5px 10px 5px 10px;
     text-decoration: none;
@@ -23,14 +26,15 @@
     padding: 5px 10px 5px 10px;
   }
   button.inline {
-    padding: 1px 4px 1px 4px;
-    border: 1px solid transparent;
+    height: 25px;
+    width: 25px;
+    padding: 2px 4px 2px 4px;
+    border: 0;
     background-color: transparent;
     text-decoration: none;
     font-size: 80%;
   }
   button.inline:hover {
-    border: 1px solid black;
     background-color: dimgrey;
     color: white;
   }
@@ -45,11 +49,12 @@
     vertical-align: middle;
     padding: 5px 10px 5px 10px;
   }
-  tbody.list {
-    cursor: pointer;
-  }
   tbody.list tr:hover {
     background-color: lightgray;
+  }
+  tbody.list a:hover {
+    color: darkblue;
+    text-decoration: underline;;
   }
   .dataTables_wrapper .dataTables_info {
     font-size: 90%;
@@ -126,7 +131,7 @@
     {% for plate in plates %}
     <tr>
       <td>{{plate['id']}}</td>
-      <td>{{plate['name']}}</td>
+      <td><a href="/pm_plate_map/?target=sample&id={{plate['id']}}">{{plate['name']}}</a></td>
       <td title="{{plate['type'][1]}}">{{plate['type'][0]}}</td>
       <td>{{plate['count']}}
         <span style="font-size:80%">
@@ -146,7 +151,7 @@
       <td title="{{plate['study'][3]}}">{{plate['study'][1]}}</td>
       <td>{{plate['person'] or "-"}}</td>
       <td>{{plate['date'] or "-"}}</td>
-      <td>
+      <td style="padding:2px;">
         <button class="inline" title="View/edit plate properties" onclick="location.href='/pm_plate_map/?target=sample&id={{plate['id']}}';"><i class="fa fa-edit"></i></button>
         <button class="inline" title="View/edit plate layout"><i class="fa fa-table"></i></button>
         <button class="inline" title="Delete plate"><i class="fa fa-remove"></i></button>

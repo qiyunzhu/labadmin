@@ -74,13 +74,16 @@
   $(document).ready(function(){
 
     // Render display items
+    $("#plated_on").datepicker();
     if (id > 0) {  // View or edit an existing plate
       // The plate map is represented as map[col_row] => sample
       $("#plate_id").html("Plate # " + id.toString() + ": ");
       $("#plate_name").val(info['name']);
       $("#plated_by").val(info['email']);
+      $("#plated_on").datepicker("setDate", info['created_on']);
     } else {  // Create a new plate
       $("#plated_by").val(currentuser);
+      $("#plated_on").datepicker("setDate", new Date());
     }
 
     // Generate plate map
@@ -149,21 +152,24 @@
       var tc = "";  // target cell
       if(e.which == 13){  // Enter
         $(this).blur();
-        tc = cc.closest('tr').next().find('td:eq(' + cc.index() + ')');
+        if (!e.shiftKey) {  // without Shift: move down
+          tc = cc.closest('tr').next().find('td:eq(' + cc.index() + ')');
+        } else {  // with Shift: move up
+          tc = cc.closest('tr').prev().find('td:eq(' + cc.index() + ')');
+        }
       } else if (e.which == 27) {  // Esc
         $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
         $(this).blur();
       } else if (e.which == 9) {  // Tab
         e.preventDefault();
-        if (!e.shiftKey) {  // without Shift
+        if (!e.shiftKey) {  // without Shift: move right
           tc = cc.next();
-        } else {
+        } else {  // with Shift: move left
           tc = cc.prev();
         }
       }
       if (tc.length > 0) {
-        cc = tc;
-        cc.children().focus();
+        tc.children().focus();
       }
     });
   });
