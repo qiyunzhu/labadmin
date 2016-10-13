@@ -816,29 +816,6 @@ class TestDataAccess(TestCase):
         err = 'Sample plate ID %s does not exist.' % spid
         self.assertEqual(str(context.exception), err)
 
-    def test_get_id_by_name(self):
-        obs = db.get_id_by_name('extraction_robot', 'HOWE_KF1')
-        exp = 1
-        self.assertEqual(obs, exp)
-        with self.assertRaises(ValueError) as context:
-            db.get_id_by_name('extraction_robot', 'not_a_robot')
-        err = '\'not_a_robot\' is not an option for \'extraction_robot\'.'
-        self.assertEqual(str(context.exception), err)
-
-    def test_get_sample_plate_type(self):
-        # Get the default plate type
-        obs = db.get_sample_plate_type()
-        exp = {'name': '96-well',
-               'cols': 12,
-               'rows': 8,
-               'notes': 'Standard 96-well plate'}
-        self.assertDictEqual(obs, exp)
-        # Get an existing sample plate's type
-        spid = db.create_sample_plate(name='test_plate')
-        obs = db.get_sample_plate_type(spid)
-        self.assertDictEqual(obs, exp)
-        db.delete_sample_plate(spid)
-
 
 if __name__ == "__main__":
     main()
