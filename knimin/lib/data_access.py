@@ -3341,25 +3341,27 @@ class KniminAccess(object):
         # field options
         sql = """INSERT INTO pm.plate_type (name, cols, rows, notes)
                  VALUES ('96-well', 12, 8, 'Standard 96-well plate')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.extraction_robot (name) VALUES ('HOWE_KF1'),
                  ('HOWE_KF2'), ('HOWE_KF3'), ('HOWE_KF4')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.extraction_tool (name) VALUES ('108379Z')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.processing_robot (name) VALUES ('ROBE'),
                  ('RIKE'), ('JERE'), ('CARMEN')"""
+        self._con.execute(sql)
         sql = """INSERT INTO pm.tm300_8_tool (name) VALUES ('208484Z'),
                  ('311318B'), ('109375A'), ('3076189')"""
+        self._con.execute(sql)
         sql = """INSERT INTO pm.tm50_8_tool (name) VALUES ('108364Z'),
                  ('311426B'), ('311441B'), ('409172Z')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.extraction_kit_lot (name) VALUES ('PM16B11')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.master_mix_lot (name) VALUES ('14459')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         sql = """INSERT INTO pm.water_lot (name) VALUES ('RNBD9959')"""
-        db._con.execute(sql)
+        self._con.execute(sql)
         # barcode => sample
         sql = """INSERT INTO pm.sample (sample_id)
                  SELECT barcode

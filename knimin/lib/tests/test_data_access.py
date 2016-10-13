@@ -30,8 +30,10 @@ class TestDataAccess(TestCase):
         db._con.execute(sql)
         sql = """INSERT INTO pm.processing_robot (name) VALUES ('ROBE'),
                  ('RIKE'), ('JERE'), ('CARMEN')"""
+        db._con.execute(sql)
         sql = """INSERT INTO pm.tm300_8_tool (name) VALUES ('208484Z'),
                  ('311318B'), ('109375A'), ('3076189')"""
+        db._con.execute(sql)
         sql = """INSERT INTO pm.tm50_8_tool (name) VALUES ('108364Z'),
                  ('311426B'), ('311441B'), ('409172Z')"""
         db._con.execute(sql)

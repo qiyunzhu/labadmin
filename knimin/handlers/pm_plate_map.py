@@ -33,4 +33,5 @@ class PMPlateMapHandler(BaseHandler):
     @authenticated
     def post(self):
         action = self.get_argument('action', default=None)
+        print action
         # functions to be added
