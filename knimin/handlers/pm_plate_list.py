@@ -4,20 +4,6 @@ from knimin.handlers.base import BaseHandler
 from knimin import db
 from knimin.handlers.access_decorators import set_access
 
-"""
-This page displays a list of plates (sample, DNA, library, )
-Columns (general):
-    ID, Name, Type, # samples, Person, Date
-Columns for sample plate
-    <DNA plate> / [create], [view/edit]
-    edit properties
-    edit layouts
-Columns for DNA plate
-Columns for library plate
-view/edit (direct click)
-set atts (multiple) (for DNA plates only)
-"""
-
 
 @set_access(['Admin'])
 class PMPlateListHandler(BaseHandler):
@@ -31,5 +17,5 @@ class PMPlateListHandler(BaseHandler):
     @authenticated
     def post(self):
         action = self.get_argument("action")
-        if action == 'migrate':
-            db.migrate_data()
+        if action == 'populate':
+            db.populate_plate_mapper()

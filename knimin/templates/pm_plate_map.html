@@ -111,12 +111,24 @@
         $("#plated_by").trigger("chosen:updated");
       }
     });
+    $.ajax({
+      url: "/pm_plate_map/",
+      data: {action: "plate_types"},
+      success: function(plate_types) {
+        plate_types = JSON.parse(plate_types)
+        for (var i = 0; i < plate_types.length; i++) {
+          $("#plate_types").append($("<option>", {value: plate_types[i], text: plate_types[i]}));
+        }
+        $("#plate_types").val(type["name"]);
+        $("#plate_types").trigger("chosen:updated");
+      }
+    });
 
     if (id > 0) {  // View or edit an existing plate
       $("#plate_id").html("Plate # " + id.toString() + ": ");
-      $("#plate_name").val(info['name']);
-      $("#plated_by").val(info['email']);
-      $("#plated_on").datepicker("setDate", info['created_on']);
+      $("#plate_name").val(info["name"]);
+      $("#plated_by").val(info["email"]);
+      $("#plated_on").datepicker("setDate", info["created_on"]);
       $("#spanSave").hide();
     } else {  // Create a new plate
       $("#plated_by").val(currentuser);
@@ -127,8 +139,8 @@
     // Generate plate map
     var table = document.getElementById("plate_map");
     table.innerHTML = "";
-    var ncol = type['cols'];
-    var nrow = type['rows'];
+    var ncol = type["cols"];
+    var nrow = type["rows"];
     for (var i = 0; i <= nrow; i++) {
       var row = table.insertRow();
       var row_html = "";
@@ -143,12 +155,12 @@
           row_html += "<td class='head'>" + String.fromCharCode(64 + i); + "</td>";
         } else {
           var well = j.toString() + "_" + i.toString();
-          var sample = {'sample_id': ''};
+          var sample = {"sample_id": ""};
           if (well2id.hasOwnProperty(well)) {
             sample = layout[well2id[well]];
           }
           // The sample ID is stored in attributes: data-sample-original (original ID from the database) and data-sample-current (current ID after the last edit).
-          row_html += ("<td><input class='cell', type='text', data-sample-original='" + sample['sample_id'] + "', data-sample-current='" + sample['sample_id'] + "'></td>");
+          row_html += ("<td><input class='cell', type='text', data-sample-original='" + sample["sample_id"] + "', data-sample-current='" + sample["sample_id"] + "'></td>");
         }
       }
       row.innerHTML = row_html;
@@ -323,7 +335,10 @@
     <label> by </label>
     <select id="plated_by" class="chosen-select" style="width:100px"></select>
     <label> on </label>
-    <input type="text", id="plated_on", style="width:100px", data-plated-on="">
+    <input type="text", id="plated_on", style="width:80px", data-plated-on="">
+    &nbsp;&nbsp;
+    <label> Type: </label>
+    <select id="plate_types" class="chosen-select" style="width:100px"></select>
     <span id="spanNav" style="float:right">
       <button onclick="navigate('first');">&lt;&lt;</button>
       <button onclick="navigate('previous');">&lt;</button>

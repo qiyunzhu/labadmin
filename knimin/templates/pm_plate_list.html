@@ -24,6 +24,8 @@
   select {
     border: 1px solid black;
     padding: 5px 10px 5px 10px;
+    height: 25px;
+    margin-bottom: 1px;
   }
   button.inline {
     height: 25px;
@@ -160,10 +162,12 @@
     {% end %}
   </tbody>
 </table>
-<hr>
 
-<form method="post" action="/pm_plate_list/" name="migrate_form" id="migrate_form">
-  <input type="hidden" name="action" value="migrate">
+{% if not plates %}
+<hr>
+<form method="post" action="/pm_plate_list/">
+  <input type="hidden" name="action" value="populate">
   <p>Migrate data: <input type="submit"></p>
 </form>
+{% end %}
 {% end %}
