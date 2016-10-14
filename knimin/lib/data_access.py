@@ -3420,22 +3420,6 @@ class KniminAccess(object):
                 if count == nbarcode:
                     break
 
-    def set_deposited_ebi(self):
-        """Updates barcode deposited status by checking EBI"""
-        accession = 'ERP012803'
-        samples = fetch_url(
-            'http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
-            '%s&result=read_run&fields=sample_alias' % accession)
-        # Clean EBI formatted sample names to just the barcodes
-        # stripped of any appended letters for barcodes run multiple times
-        barcodes = tuple(s.strip().split('.')[1][:9]
-                         for s in samples if len(s.split('.')) == 2)
-
-        sql = """UPDATE ag.ag_kit_barcodes
-                 SET deposited = TRUE
-                 WHERE barcode IN %s"""
-        self._con.execute(sql, [barcodes])
-
     def _clear_table(self, table, schema):
         """Test helper to wipe out a database table"""
         self._con.execute('DELETE FROM %s.%s' % (schema, table))
