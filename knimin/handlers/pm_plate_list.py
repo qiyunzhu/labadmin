@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from tornado.web import authenticated
 from knimin.handlers.base import BaseHandler
 from knimin import db

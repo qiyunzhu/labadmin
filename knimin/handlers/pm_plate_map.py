@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from tornado.web import authenticated
 from knimin.handlers.base import BaseHandler
 from knimin import db
@@ -23,15 +22,22 @@ class PMPlateMapHandler(BaseHandler):
             self.render('pm_plate_map.html', currentuser=self.current_user,
                         target=target, id=pid, type=ptype, info=pinfo,
                         layout=playout)
-        elif action == 'emails':
-            self.write(dumps(db.get_email_list()))
-        elif action == 'plate_types':
-            self.write(dumps(db.get_plate_type_list()))
-        elif action == 'plate_ids':
-            self.write(dumps(db.get_sample_plate_ids()))
 
     @authenticated
     def post(self):
         action = self.get_argument('action', default=None)
         print action
         # functions to be added
+
+
+@set_access(['Admin'])
+class PMPlateMapAjaxHandler(BaseHandler):
+    @authenticated
+    def get(self):
+        action = self.get_argument('action', default=None)
+        if action == 'plate_ids':
+            self.write(dumps(db.get_sample_plate_ids()))
+        elif action == 'emails':
+            self.write(dumps(db.get_email_list()))
+        elif action == 'plate_types':
+            self.write(dumps(db.get_plate_type_list()))

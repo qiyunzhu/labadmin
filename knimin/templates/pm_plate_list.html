@@ -84,9 +84,7 @@
 </style>
 <script type="text/javascript">
   $(document).ready(function(){
-    // var plates = {#plates#};
     $("#btnNew").click(function(){
-        // alert("button");
         alert(this.innerHTML);
         alert($(this).text());
     });
@@ -99,9 +97,6 @@
         $(this).toggleClass('selected');
     });
   });
-  window.onload = function() {
-    // items=items, pageno=pageno, total=total, plates=plates
-  }
 </script>
 {% end %}
 
@@ -149,7 +144,7 @@
           {% else %}
           <i class="fa fa-battery-empty"></i>
           {% end %}
-      </span></td>
+        </span></td>
       <td title="{{plate['study'][3]}}">{{plate['study'][1]}}</td>
       <td>{{plate['person'] or "-"}}</td>
       <td>{{plate['date'] or "-"}}</td>

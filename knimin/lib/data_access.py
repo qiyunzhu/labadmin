@@ -1814,17 +1814,6 @@ class KniminAccess(object):
                                 address, city, state, zipcode, country,
                                 ag_login_id])
 
-    def updateAGKit(self, ag_kit_id, supplied_kit_id, kit_password,
-                    swabs_per_kit, kit_verification_code):
-        kit_password = hashpw(kit_password)
-        sql = """UPDATE ag_kit
-                 SET supplied_kit_id = %s, kit_password = %s,
-                     swabs_per_kit = %s, kit_verification_code = %s
-                 WHERE ag_kit_id = %s"""
-
-        self._con.execute(sql, [supplied_kit_id, kit_password, swabs_per_kit,
-                                kit_verification_code, ag_kit_id])
-
     def updateAGBarcode(self, barcode, ag_kit_id, site_sampled,
                         environment_sampled, sample_date, sample_time,
                         participant_name, notes, refunded, withdrawn):
@@ -2399,6 +2388,22 @@ class KniminAccess(object):
         """
         sql = """SELECT project FROM project"""
         return [x[0] for x in self._con.execute_fetchall(sql)]
+
+    def set_deposited_ebi(self):
+        """Updates barcode deposited status by checking EBI"""
+        accession = 'ERP012803'
+        samples = fetch_url(
+            'http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
+            '%s&result=read_run&fields=sample_alias' % accession)
+        # Clean EBI formatted sample names to just the barcodes
+        # stripped of any appended letters for barcodes run multiple times
+        barcodes = tuple(s.strip().split('.')[1][:9]
+                         for s in samples if len(s.split('.')) == 2)
+
+        sql = """UPDATE ag.ag_kit_barcodes
+                 SET deposited = TRUE
+                 WHERE barcode IN %s"""
+        self._con.execute(sql, [barcodes])
 
     def _study_exists(self, study_id):
         """Confirms that a study ID exists

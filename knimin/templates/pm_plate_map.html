@@ -20,7 +20,6 @@
   #plate_map {
     width: 100%;
     table-layout: fixed;
-    /* border-spacing: 0; */
     border: 1px solid black;
     border-collapse: collapse;
   }
@@ -49,16 +48,13 @@
   }
   input.cell:focus {
     outline: none;
-    /*border-color: #719ECE;*/
-    box-shadow: inset 0 0 5px rgb(44,127,184); /*#719ECE;*/
+    box-shadow: inset 0 0 5px rgb(44,127,184);
     background-color: white;
   }
   input[type="text"] {
     border-radius: 0;
   }
   .chosen-container-single .chosen-single {
-    /* height: 30px;
-    border-radius: 3px; */
     height: 25px;
     border-radius: 0;
     background-image: none;
@@ -95,13 +91,17 @@
     well2id[layout[i]['col'].toString() + "_" + layout[i]['row'].toString()] = i;
   }
 
+  // Global variables
+  var editing = false;                            // User is editing the plate
+  var lastCell = "";                              // Last cell edited
+
   $(document).ready(function() {
 
     // Render display items
     $(".chosen-select").chosen();
     $("#plated_on").datepicker();
     $.ajax({
-      url: "/pm_plate_map/",
+      url: "/pm_plate_map/ajax/",
       data: {action: "emails"},
       success: function(emails) {
         emails = JSON.parse(emails)
@@ -112,7 +112,7 @@
       }
     });
     $.ajax({
-      url: "/pm_plate_map/",
+      url: "/pm_plate_map/ajax/",
       data: {action: "plate_types"},
       success: function(plate_types) {
         plate_types = JSON.parse(plate_types)
@@ -134,6 +134,7 @@
       $("#plated_by").val(currentuser);
       $("#plated_on").datepicker("setDate", new Date());
       $("#spanNav").hide();
+      editing = true;
     }
 
     // Generate plate map
@@ -183,6 +184,7 @@
     // Restore a well's style when it loses focus
     $("input.cell").on("blur", function () {
       var cell = $(this).parent();
+      lastCell = cell;
       cell.closest('tr').children('td:first').css("background-color", "");
       cell.closest('tr').siblings().first().children(':nth-child(' + (cell.index() + 1) + ')').css("background-color", "");
       $(this).attr("data-sample-current", $(this).val());
@@ -191,11 +193,28 @@
 
     // Check if a cell's value has been changed, and apply style accordingly
     $("input.cell").on("input", function () {
-      var x = $(this).attr("data-sample-original");
-      if (x && $(this).val() != x) {
-        $(this).css("color", "firebrick");
-      } else {
-        $(this).css("color", "black");
+      var valChanged = false;
+      if (id == 0) {  // create new plate
+        if ($(this).val()) {
+            valChanged = true;
+        }
+      } else {  // edit existing plate
+        var x = $(this).attr("data-sample-original");
+        if ($(this).val() != x) {  // cell edited
+          valChanged = true;
+          if (x) {
+            $(this).css("color", "firebrick");  // existing value changed
+          } else {
+            $(this).css("color", "darkgreen");  // new value added
+          }
+        } else {
+          $(this).css("color", "black");  // value unchanged
+        }
+      }
+      if (valChanged && !editing) {
+        editing = true;
+        $("#spanNav").hide();
+        $("#spanSave").show();
       }
     });
 
@@ -228,62 +247,68 @@
             tc = cc.closest('tr').prev().find('td:eq(' + cc.index() + ')');
           }
         } else {  // with Shift and Ctrl: fill entire column
-          var toClear = false; strPrefix = "", strNum = "", digits = 0;
-          var strInit = $(this).attr("data-sample-current");
-          if (strInit === "") {  // clear entire column
-            toClear = true;
-          } else {  // fill entire column with incremental numbers
-            var m = strInit.match(/^(.*?)(\d+)$/);
-            if (m.length > 0) {  // trailing number found
-              strPrefix = m[1];  // string before the number part
-              strNum = m[2];  // number part
-              digits = 0;
-              if (strNum.charAt(0) == "0") {  // if there are leading zero(s)
-                digits = strNum.length;  // record number of digits
-              }
-            }
-          }
-          if (toClear || strNum.length > 0) {
-            var fc = "";  // first cell to fill
-            if (cc.closest('tr').is(":last-child")) {  // next column in table
-              if (!cc.is(":last-child")) {  // not last column in table
-                fc = cc.closest('tr').siblings().eq(1).find('td:eq(' + (cc.index() + 1) + ')');
-              }
-            } else {  // next cell in column
-              fc = cc.closest('tr').next().find('td:eq(' + cc.index() + ')');
-            }
-            var curNum = 0;
-            if (strNum.length > 0) {
-              curNum = parseInt(strNum) + 1;
-            }
-            while (fc.length > 0) {  // fill till last cell in column
-              fc.children().focus();
-              var s = "";
-              if (!toClear) {  // generate current ID
-                s = curNum.toString();
-                while (s.length < digits) {
-                  s = "0" + s;
-                }
-                s = strPrefix + s;
-                curNum += 1;
-              }
-              fc.children().val(s);
-              fc.children().trigger("input");
-              fc = fc.closest('tr').next().find('td:eq(' + fc.index() + ')');
-            }
-          }
+          fillColumn(cc);
         }
       }
       if (tc.length > 0) {
         tc.children().focus();
       }
     });
+
   });
+
+  function fillColumn(cc) {
+    // cc: current cell
+    var clear = false; strPrefix = "", strNum = "", digits = 0;
+    var strInit = cc.children().attr("data-sample-current");
+    if (strInit === "") {  // clear entire column
+      clear = true;
+    } else {  // fill entire column with incremental numbers
+      var m = strInit.match(/^(.*?)(\d+)$/);
+      if (m.length > 0) {  // trailing number found
+        strPrefix = m[1];  // string before the number part
+        strNum = m[2];  // number part
+        digits = 0;
+        if (strNum.charAt(0) == "0") {  // if there are leading zero(s)
+          digits = strNum.length;  // record number of digits
+        }
+      }
+    }
+    if (clear || strNum.length > 0) {
+      var fc = "";  // first cell to fill
+      if (cc.closest('tr').is(":last-child")) {  // next column in table
+        if (!cc.is(":last-child")) {  // not last column in table
+          fc = cc.closest('tr').siblings().eq(1).find('td:eq(' + (cc.index() + 1) + ')');
+        }
+      } else {  // next cell in column
+        fc = cc.closest('tr').next().find('td:eq(' + cc.index() + ')');
+      }
+      var curNum = 0;
+      if (strNum.length > 0) {
+        curNum = parseInt(strNum) + 1;
+      }
+      while (fc.length > 0) {  // fill till last cell in column
+        fc.children().focus();
+        var s = "";
+        if (!clear) {  // generate current ID
+          s = curNum.toString();
+          while (s.length < digits) {
+            s = "0" + s;
+          }
+          s = strPrefix + s;
+          curNum += 1;
+        }
+        fc.children().val(s);
+        fc.children().trigger("input");
+        fc = fc.closest('tr').next().find('td:eq(' + fc.index() + ')');
+      }
+    }
+  }
 
   // Navigate to another plate
   function navigate(move) {
     var plate_ids = JSON.parse($.ajax({
-      url: "/pm_plate_map/",
+      url: "/pm_plate_map/ajax/",
       data: {action: "plate_ids"},
       global: false,
       async: false,
@@ -323,34 +348,47 @@
     }
   }
 
+  // Show help information
+  function help() {
+    alert(`When finishing typing in a cell, you may press the follow keys:
+           <Enter>: move down; <Shift + Enter>: move up.
+           <Tab>: move right; <Shift + Tab>: move left.
+           <Shift + Ctrl + Enter>: Fill the entire column with incremental numbers (if the current cell ends with number), or clear the entire column (if the current cell is empty).
+           If the current cell is the last cell in a column, the column to the right will be filled / cleared.`);
+  }
+
 </script>
 {% end %}
 
 {% block content %}
 <h3 id="page_title">{{target[0].upper() + target[1:]}} Plate Layout</h3>
 <div style="padding-left:20px;padding-right:20px;">
-  <p>
+  <p id="pTitle">
     <label id="plate_id">Create new plate: </label>
     <input type="text", id="plate_name", style="width:200px", data-plate-id=0>
     <label> by </label>
     <select id="plated_by" class="chosen-select" style="width:100px"></select>
     <label> on </label>
     <input type="text", id="plated_on", style="width:80px", data-plated-on="">
-    &nbsp;&nbsp;
-    <label> Type: </label>
+    &nbsp;
+    <label>type: </label>
     <select id="plate_types" class="chosen-select" style="width:100px"></select>
     <span id="spanNav" style="float:right">
-      <button onclick="navigate('first');">&lt;&lt;</button>
+      <button onclick="navigate('first');">|&lt;</button>
       <button onclick="navigate('previous');">&lt;</button>
       <input type="text", value="{{id}}" style="width:35px" onkeyup="if(event.keyCode==13){navigate(this.value);}">
       <button onclick="navigate('next');">&gt;</button>
-      <button onclick="navigate('last');">&gt;&gt;</button>
+      <button onclick="navigate('last');">&gt;|</button>
       |
       <button onclick="location.href='/pm_plate_map/?target={{target}}&id=0';"><i class="fa fa-plus"></i> Create new</button>
     </span>
     <span id="spanSave" style="float:right">
       <button id="btnSave"><i class="fa fa-save"></i> Save changes</button>
     </span>
+  </p>
+  <p id="pTools">
+    <button onclick="if(lastCell.length>0){fillColumn(lastCell);}"><i class="fa fa-columns"></i> Fill</button>
+    <button onclick="help()"><i class="fa fa-question"></i> Help</button>
   </p>
   <table id="plate_map"></table>
   <hr>
