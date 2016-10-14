@@ -23,12 +23,6 @@ class PMPlateMapHandler(BaseHandler):
                         target=target, id=pid, type=ptype, info=pinfo,
                         layout=playout)
 
-    @authenticated
-    def post(self):
-        action = self.get_argument('action', default=None)
-        print action
-        # functions to be added
-
 
 @set_access(['Admin'])
 class PMPlateMapAjaxHandler(BaseHandler):

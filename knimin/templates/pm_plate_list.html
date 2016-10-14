@@ -73,21 +73,10 @@
   .dataTables_wrapper .dataTables_paginate .paginate_button {
     padding: 4px 8px 4px 8px;
     text-decoration: none;
-      /* padding : 0px;
-      margin-left: 0px;
-      display: inline;
-      border: 0px; */
-  }
-  .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-      /* border: 0px; */
   }
 </style>
 <script type="text/javascript">
   $(document).ready(function(){
-    $("#btnNew").click(function(){
-        alert(this.innerHTML);
-        alert($(this).text());
-    });
     $('#plate_list').DataTable({
       scrollY: 450,
       scrollCollapse: true,
@@ -103,7 +92,6 @@
 {% block content %}
 <h3 id="page_title">{{target[0].upper() + target[1:]}} Plate List</h3>
 <p>
-  <!--span style="float:right"><button id="btnNew">Create new plate</button></span-->
   <button id="btnNew"><i class="fa fa-plus"></i> Create new</button>
   <button id="btnDel"><i class="fa fa-remove"></i> Delete selected</button>
   <button id="btnEdit"><i class="fa fa-edit"></i> Batch-edit selected</button>

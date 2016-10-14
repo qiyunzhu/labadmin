@@ -3241,8 +3241,7 @@ class KniminAccess(object):
                      FROM pm.plate_type
                      JOIN pm.sample_plate
                      USING (plate_type_id)
-                     WHERE %s IS NULL OR sample_plate_id = %s
-                     LIMIT 1"""
+                     WHERE %s IS NULL OR sample_plate_id = %s"""
             TRN.add(sql, [id, id])
             return dict(TRN.execute_fetchindex()[0])
 
