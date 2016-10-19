@@ -824,6 +824,7 @@ class TestDataAccess(TestCase):
         spid = db.create_sample_plate('test_plate', ptid)
         obs = db.get_sample_plate_ids()[-1]
         self.assertEqual(obs, spid)
+        db.delete_sample_plate(spid)
 
     def test_get_sample_plate_list(self):
         # Create a sample plate
