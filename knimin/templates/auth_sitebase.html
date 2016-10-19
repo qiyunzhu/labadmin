@@ -61,7 +61,6 @@
         <ul class="mainmenu">
             {% if admin or db.has_access(current_user, ['Admin']) %}
             <li><a href="/pm_plate_list/">View Plate List</a></li>
-            <li><a href="/pm_plate_map/?target=sample&id=0">Create New Plate</a></li>
             {% end %}
         </ul>
 
