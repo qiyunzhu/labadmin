@@ -174,16 +174,16 @@
       var nrow = $("#plate-types").find(":selected").data("rows");
       for (var i = 0; i <= nrow; i++) {
         var row = table.insertRow();
-        var row_html = "";
+        var rowHtml = "";
         for (var j = 0; j <= ncol; j++) {
           if (i == 0) {
             if (j == 0) {
-              row_html += "<td width=20></td>";
+              rowHtml += "<td width=20></td>";
             } else {
-              row_html += "<td class='head'>" + j.toString() + "</td>";
+              rowHtml += "<td class='head'>" + j.toString() + "</td>";
             }
           } else if (j == 0) {
-            row_html += "<td class='head'>" + String.fromCharCode(64 + i) + "</td>";
+            rowHtml += "<td class='head'>" + String.fromCharCode(64 + i) + "</td>";
           } else {
             var cell = j.toString() + "_" + i.toString();
             var sample = {"sample_id": ""};
@@ -191,10 +191,10 @@
               sample = layout[cell2Idx[cell]];
             }
             // The sample ID is stored in attributes: data-sample-original (original ID from the database) and data-sample-current (current ID after the last edit).
-            row_html += ("<td><input class='cell', type='text', data-sample-original='" + sample["sample_id"] + "', data-sample-current='" + sample["sample_id"] + "'></td>");
+            rowHtml += ("<td><input class='cell', type='text', data-sample-original='" + sample["sample_id"] + "', data-sample-current='" + sample["sample_id"] + "'></td>");
           }
         }
-        row.innerHTML = row_html;
+        row.innerHTML = rowHtml;
       }
       // Hide leading zeros
       $("input.cell").each(function() {
