@@ -7,7 +7,7 @@
 {% autoescape None %}
 <script type="text/javascript" src="/static/js/labmin.js"></script>
 <script type="text/javascript" src="/static/vendor/js/jquery.validate.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+<link rel="stylesheet" href="/static/vendor/font-awesome/css/font-awesome.min.css">
 <style>
   p {
     font-weight: bold;
@@ -17,13 +17,13 @@
     text-decoration: none;
     font-size: 80%;
   }
-  #plate_map {
+  #plate-map {
     width: 100%;
     table-layout: fixed;
     border: 1px solid black;
     border-collapse: collapse;
   }
-  #plate_map td {
+  #plate-map td {
     text-align: center;
     vertical-align: middle;
     border: 1px solid black;
@@ -31,7 +31,7 @@
     padding: 0;
     background-color: rgba(255,247,188,0.75);
   }
-  #plate_map td.head {
+  #plate-map td.head {
     font-size: 80%;
     padding-top: 1px;
     padding-bottom: 1px;
@@ -79,101 +79,133 @@
   // Retrieve data
   var target = {{dumps(target)}};                 // Target object: sample, primer, barseq, etc.
   var id = {{dumps(id)}};                         // Plate ID (0 for creating new plate)
-  var info = {{dumps(info)}};                     // Plate info: name, email, created_on, notes
-  var type = {{dumps(type)}};                     // Plate type: name, cols, rows, notes
-  var layout = {{dumps(layout)}};                 // Plate layout: sample_id, col, row, name, notes
   var currentuser = {{dumps(currentuser)}};       // Current user
 
-  // Pre-process data
-  // The coordinate of a well is represented by a scalar "col_row" to facilitate searching
-  var well2id = {};
-  for (var i = 0; i < layout.length; i++) {
-    well2id[layout[i]['col'].toString() + "_" + layout[i]['row'].toString()] = i;
-  }
-
   // Global variables
+  var info;                                       // Plate info: name, plate_type_id, email, created_on, notes
+  var layout;                                     // Plate layout: sample_id, col, row, name, notes
   var editing = false;                            // User is editing the plate
   var lastCell = "";                              // Last cell edited
 
   $(document).ready(function() {
 
-    // Render display items
+    /*Retrieve and display information
+    */
     $(".chosen-select").chosen();
-    $("#plated_on").datepicker();
-    $.ajax({
-      url: "/pm_plate_map/ajax/",
-      data: {action: "emails"},
-      success: function(emails) {
-        emails = JSON.parse(emails)
-        for (var i = 0; i < emails.length; i++) {
-          $("#plated_by").append($("<option>", {value: emails[i], text: emails[i]}));
-        }
-        $("#plated_by").trigger("chosen:updated");
-      }
-    });
-    $.ajax({
-      url: "/pm_plate_map/ajax/",
-      data: {action: "plate_types"},
-      success: function(plate_types) {
-        plate_types = JSON.parse(plate_types)
-        for (var i = 0; i < plate_types.length; i++) {
-          $("#plate_types").append($("<option>", {value: plate_types[i], text: plate_types[i]}));
-        }
-        $("#plate_types").val(type["name"]);
-        $("#plate_types").trigger("chosen:updated");
-      }
-    });
+    $("#plated-on").datepicker();
+    updatePlateInfo();
 
-    if (id > 0) {  // View or edit an existing plate
-      $("#plate_id").html("Plate # " + id.toString() + ": ");
-      $("#plate_name").val(info["name"]);
-      $("#plated_by").val(info["email"]);
-      $("#plated_on").datepicker("setDate", info["created_on"]);
-      $("#spanSave").hide();
-    } else {  // Create a new plate
-      $("#plated_by").val(currentuser);
-      $("#plated_on").datepicker("setDate", new Date());
-      $("#spanNav").hide();
-      editing = true;
-    }
-
-    // Generate plate map
-    var table = document.getElementById("plate_map");
-    table.innerHTML = "";
-    var ncol = type["cols"];
-    var nrow = type["rows"];
-    for (var i = 0; i <= nrow; i++) {
-      var row = table.insertRow();
-      var row_html = "";
-      for (var j = 0; j <= ncol; j++) {
-        if (i == 0) {
-          if (j == 0) {
-            row_html += "<td width=20></td>";
+    // Update Email list
+    function updateEmails() {
+      $.get("/pm_plate_map/emails/")
+        .done(function(data) {
+          var emails = JSON.parse(data);
+          $("#plated-by").empty();
+          for (var i = 0; i < emails.length; i++) {
+            $("#plated-by").append($("<option>", {value: emails[i], text: emails[i]}));
+          }
+          if (id > 0) {
+            $("#plated-by").val(info["email"]);
           } else {
-            row_html += "<td class='head'>" + j.toString() + "</td>";
+            $("#plated-by").val(currentuser);
           }
-        } else if (j == 0) {
-          row_html += "<td class='head'>" + String.fromCharCode(64 + i); + "</td>";
-        } else {
-          var well = j.toString() + "_" + i.toString();
-          var sample = {"sample_id": ""};
-          if (well2id.hasOwnProperty(well)) {
-            sample = layout[well2id[well]];
-          }
-          // The sample ID is stored in attributes: data-sample-original (original ID from the database) and data-sample-current (current ID after the last edit).
-          row_html += ("<td><input class='cell', type='text', data-sample-original='" + sample["sample_id"] + "', data-sample-current='" + sample["sample_id"] + "'></td>");
-        }
-      }
-      row.innerHTML = row_html;
+          $("#plated-by").trigger("chosen:updated");
+        });
     }
 
-    // Hide leading zeros
-    $("input.cell").each(function() {
-        $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
-    });
+    // Update plate type list
+    function updatePlateTypes(type) {
+      $.get("/pm_plate_map/plate_types/")
+        .done(function(data) {
+          var types = JSON.parse(data);
+          for (var i = 0; i < types.length; i++) {
+            $("#plate-types").append($("<option></option>").val(types[i]["id"]).attr({"data-cols": types[i]["cols"], "data-rows": types[i]["rows"], "data-notes": types[i]["notes"]}).text(types[i]["name"]));
+          }
+          if (id > 0) {
+            $("#plate-types").val(info["plate_type_id"]);
+          } else {
+            $("#plate-types option:first-child").attr("selected", "selected");
+          }
+          $("#plate-types").trigger("chosen:updated");
+          renderPlateMap();
+        });
+    }
 
+    // Update plate information
+    function updatePlateInfo() {
+      if (id > 0) {  // View or edit an existing plate
+        $("#plate-id").html("Plate # " + id.toString() + ": ");
+        $.get("/pm_plate_map/info/", {id: id})
+          .done(function(data) {
+            info = JSON.parse(data);
+            $("#plate-name").val(info["name"]);
+            $("#plated-on").datepicker("setDate", info["created_on"]);
+            $.get("/pm_plate_map/layout/", {id: id})
+              .done(function(data) {
+                layout = JSON.parse(data);
+                updatePlateTypes();
+                updateEmails();
+              });
+            $("#span-save").hide();
+            $("#span-nav").show();
+          });
+      } else {  // Create a new plate
+        $("#plated-on").datepicker("setDate", new Date());
+        updatePlateTypes();
+        updateEmails();
+        $("#span-nav").hide();
+        $("#span-save").show();
+        editing = true;
+      }
+    }
+
+    // Display plate layout
+    function renderPlateMap() {
+      // The coordinate of a well is represented by a scalar "col_row" to facilitate searching
+      var cell2Idx = {};
+      if (layout !== undefined) {
+        for (var i = 0; i < layout.length; i++) {
+          cell2Idx[layout[i]['col'].toString() + "_" + layout[i]['row'].toString()] = i;
+        }
+      }
+      var table = document.getElementById("plate-map");
+      table.innerHTML = "";
+      var ncol = $("#plate-types").find(":selected").data("cols");
+      var nrow = $("#plate-types").find(":selected").data("rows");
+      for (var i = 0; i <= nrow; i++) {
+        var row = table.insertRow();
+        var row_html = "";
+        for (var j = 0; j <= ncol; j++) {
+          if (i == 0) {
+            if (j == 0) {
+              row_html += "<td width=20></td>";
+            } else {
+              row_html += "<td class='head'>" + j.toString() + "</td>";
+            }
+          } else if (j == 0) {
+            row_html += "<td class='head'>" + String.fromCharCode(64 + i) + "</td>";
+          } else {
+            var cell = j.toString() + "_" + i.toString();
+            var sample = {"sample_id": ""};
+            if (cell2Idx.hasOwnProperty(cell)) {
+              sample = layout[cell2Idx[cell]];
+            }
+            // The sample ID is stored in attributes: data-sample-original (original ID from the database) and data-sample-current (current ID after the last edit).
+            row_html += ("<td><input class='cell', type='text', data-sample-original='" + sample["sample_id"] + "', data-sample-current='" + sample["sample_id"] + "'></td>");
+          }
+        }
+        row.innerHTML = row_html;
+      }
+      // Hide leading zeros
+      $("input.cell").each(function() {
+          $(this).val($(this).attr("data-sample-current").replace(/\b0+/g, ''));
+      });
+    }
+
+    /*Plate map events
+    */
     // Change a well's style when it gets focus
-    $("input.cell").on("focus", function () {
+    $(document).on("click", 'input.cell', function() {
       var cell = $(this).parent();
       cell.closest('tr').children('td:first').css("background-color", "darkkhaki");
       cell.closest('tr').siblings().first().children(':nth-child(' + (cell.index() + 1) + ')').css("background-color", "darkkhaki");
@@ -182,7 +214,7 @@
     });
 
     // Restore a well's style when it loses focus
-    $("input.cell").on("blur", function () {
+    $(document).on("blur", 'input.cell', function() {
       var cell = $(this).parent();
       lastCell = cell;
       cell.closest('tr').children('td:first').css("background-color", "");
@@ -192,7 +224,7 @@
     });
 
     // Check if a cell's value has been changed, and apply style accordingly
-    $("input.cell").on("input", function () {
+    $(document).on("input", 'input.cell', function() {
       var valChanged = false;
       if (id == 0) {  // create new plate
         if ($(this).val()) {
@@ -213,13 +245,13 @@
       }
       if (valChanged && !editing) {
         editing = true;
-        $("#spanNav").hide();
-        $("#spanSave").show();
+        $("#span-nav").hide();
+        $("#span-save").show();
       }
     });
 
     // When finishing editing a well, move focus to another well
-    $("input.cell").on("keypress", function (e) {
+    $(document).on("keypress", 'input.cell', function(e) {
       var cc = $(this).parent();  // current cell
       var tc = "";  // target cell
       if (e.which == 27) {  // Esc
@@ -254,9 +286,9 @@
         tc.children().focus();
       }
     });
-
   });
 
+  // Fill entire column
   function fillColumn(cc) {
     // cc: current cell
     var clear = false; strPrefix = "", strNum = "", digits = 0;
@@ -307,45 +339,40 @@
 
   // Navigate to another plate
   function navigate(move) {
-    var plate_ids = JSON.parse($.ajax({
-      url: "/pm_plate_map/ajax/",
-      data: {action: "plate_ids"},
-      global: false,
-      async: false,
-      success: function(result) {
-        return result;
-      }
-    }).responseText);
-    var current_index = $.inArray(parseInt(id), plate_ids);
-    var target_id = null;
-    var last_index = plate_ids.length - 1;
-    if (move == "first") {
-      target_id = plate_ids[0];
-    } else if (move == "previous") {
-      if (current_index > 0) {
-        target_id = plate_ids[current_index - 1];
-      }
-    } else if (move == "next") {
-      if (current_index < last_index) {
-        target_id = plate_ids[current_index + 1];
-      }
-    } else if (move == "last") {
-      target_id = plate_ids[last_index];
-    } else if (move == "new") {
-      target_id = 0;
-    } else {
-      var j = parseInt(move);
-      if ($.inArray(j, plate_ids) != -1){
-        if (j !== id) {
-          target_id = j;
+    $.get("/pm_plate_map/plate_ids/")
+      .done(function(data) {
+        var plateIds = JSON.parse(data);
+        var curIdx = $.inArray(parseInt(id), plateIds);
+        var targetId = null;
+        var lastIdx = plateIds.length - 1;
+        if (move == "first") {
+          targetId = plateIds[0];
+        } else if (move == "previous") {
+          if (curIdx > 0) {
+            targetId = plateIds[curIdx - 1];
+          }
+        } else if (move == "next") {
+          if (curIdx < lastIdx) {
+            targetId = plateIds[curIdx + 1];
+          }
+        } else if (move == "last") {
+          targetId = plateIds[lastIdx];
+        } else if (move == "new") {
+          targetId = 0;
+        } else {
+          var j = parseInt(move);
+          if ($.inArray(j, plateIds) != -1){
+            if (j !== id) {
+              targetId = j;
+            }
+          } else {
+            alert("Plate ID " + move.toString() + " does not exist.");
+          }
         }
-      } else {
-        alert("Plate ID " + move.toString() + " does not exist.");
-      }
-    }
-    if (target_id !== null) {
-      location.href = "/pm_plate_map/?target={{target}}&id=" + target_id.toString();
-    }
+        if (targetId !== null) {
+          location.href = "/pm_plate_map/?target=" + target + "&id=" + targetId.toString();
+        }
+      });
   }
 
   // Show help information
@@ -356,24 +383,23 @@
            <Shift + Ctrl + Enter>: Fill the entire column with incremental numbers (if the current cell ends with number), or clear the entire column (if the current cell is empty).
            If the current cell is the last cell in a column, the column to the right will be filled / cleared.`);
   }
-
 </script>
 {% end %}
 
 {% block content %}
-<h3 id="page_title">{{target[0].upper() + target[1:]}} Plate Layout</h3>
+<h3 id="page-title">{{target[0].upper() + target[1:]}} Plate Layout</h3>
 <div style="padding-left:20px;padding-right:20px;">
-  <p id="pTitle">
-    <label id="plate_id">Create new plate: </label>
-    <input type="text", id="plate_name", style="width:200px", data-plate-id=0>
+  <p id="title-bar">
+    <label id="plate-id">Create new plate: </label>
+    <input type="text", id="plate-name", style="width:200px", data-plate-id=0>
     <label> by </label>
-    <select id="plated_by" class="chosen-select" style="width:100px"></select>
+    <select id="plated-by" class="chosen-select" style="width:100px"></select>
     <label> on </label>
-    <input type="text", id="plated_on", style="width:80px", data-plated-on="">
+    <input type="text", id="plated-on", style="width:80px", data-plated-on="">
     &nbsp;
     <label>type: </label>
-    <select id="plate_types" class="chosen-select" style="width:100px"></select>
-    <span id="spanNav" style="float:right">
+    <select id="plate-types" class="chosen-select" style="width:100px"></select>
+    <span id="span-nav" style="float:right;display:none">
       <button onclick="navigate('first');">|&lt;</button>
       <button onclick="navigate('previous');">&lt;</button>
       <input type="text", value="{{id}}" style="width:35px" onkeyup="if(event.keyCode==13){navigate(this.value);}">
@@ -382,15 +408,15 @@
       |
       <button onclick="location.href='/pm_plate_map/?target={{target}}&id=0';"><i class="fa fa-plus"></i> Create new</button>
     </span>
-    <span id="spanSave" style="float:right">
+    <span id="span-save" style="float:right;display:none">
       <button id="btnSave"><i class="fa fa-save"></i> Save changes</button>
     </span>
   </p>
-  <p id="pTools">
+  <p id="tool-bar">
     <button onclick="if(lastCell.length>0){fillColumn(lastCell);}"><i class="fa fa-columns"></i> Fill</button>
     <button onclick="help()"><i class="fa fa-question"></i> Help</button>
   </p>
-  <table id="plate_map"></table>
+  <table id="plate-map"></table>
   <hr>
 </div>
 {% end %}

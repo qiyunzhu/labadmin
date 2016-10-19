@@ -1,0 +1,151 @@
+I hope you love Font Awesome. If you've found it useful, please do me a favor and check out my latest project,
+Fort Awesome (https://fortawesome.com). It makes it easy to put the perfect icons on your website. Choose from our awesome,
+comprehensive icon sets or copy and paste your own.
+
+Please. Check it out.
+
+-Dave Gandy
+
+
+plate list
+
+Ricardo
+
+
+var dict={{ json_encode(dico) }};  
+
+<tr class="spacer"><td></td></tr>
+
+        sql = """SELECT plate_type_id
+                 FROM pm.plate_type
+                 WHERE %s IS NULL OR name = %s
+                 ORDER BY plate_type_id ASC
+                 LIMIT 1"""
+
+
+
+        sql = """SELECT sample_plate_id, sample_plate.name, plate_type.name,
+                        cols, rows, email, created_on,
+                        (SELECT COUNT(*) FROM pm.sample_plate_layout
+                         JOIN pm.study_sample USING (sample_id)
+                         WHERE pm.sample_plate_layout.sample_plate_id
+                               = pm.sample_plate.sample_plate_id)
+                 FROM pm.sample_plate
+                 JOIN pm.plate_type
+                 USING (plate_type_id)
+                 ORDER BY sample_plate_id"""
+
+
+
+                 JOIN pm.study_sample USING (sample_id)
+
+
+
+        sql = """SELECT sample_plate_id, sample_plate.name, plate_type.name,
+                        cols, rows, email, created_on,
+                        (SELECT COUNT(*) FROM pm.sample_plate_layout
+                         WHERE pm.sample_plate_layout.sample_plate_id
+                               = pm.sample_plate.sample_plate_id),
+                        (SELECT COUNT(study_id)
+                         FROM pm.study_sample
+                         JOIN pm.study USING (study_id)
+                         JOIN pm.sample_plate_layout USING (sample_id)
+                         JOIN pm.sample_plate USING (sample_plate_id)
+                         WHERE pm.sample_plate_layout.sample_plate_id
+                               = pm.sample_plate.sample_plate_id
+                         GROUP BY study_id
+                         ORDER BY COUNT(study_id) DESC
+                         LIMIT 1)
+                 FROM pm.sample_plate
+                 JOIN pm.plate_type
+                 USING (plate_type_id)
+                 ORDER BY sample_plate_id"""
+
+
+100 - 4
+67-100 - 3
+33-67: 2
+0-23: 1
+0: 0
+
+
+sWrapper:"dataTables_wrapper",
+sFilter:"dataTables_filter",
+sInfo:"dataTables_info",
+sPaging:"dataTables_paginate paging_",
+sLength:"dataTables_length",
+sProcessing:"dataTables_processing",
+sSortAsc:"sorting_asc",
+sSortDesc:"sorting_desc",
+sSortable:"sorting",
+sSortableAsc:"sorting_asc_disabled",
+sSortableDesc:"sorting_desc_disabled",
+sSortableNone:"sorting_disabled",
+sSortColumn:"sorting_",
+sFilterInput:"",
+sLengthSelect:"",
+sScrollWrapper:"dataTables_scroll",
+sScrollHead:"dataTables_scrollHead",
+sScrollHeadInner:"dataTables_scrollHeadInner",
+sScrollBody:"dataTables_scrollBody",
+sScrollFoot:"dataTables_scrollFoot",
+sScrollFootInner:"dataTables_scrollFootInner",sHeaderTH:"",sFooterTH:"",sSortJUIAsc:"",sSortJUIDesc:"",sSortJUI:"",sSortJUIAscAllowed:"",sSortJUIDescAllowed:"",sSortJUIWrapper:"",sSortIcon:"",sJUIHeader:"",sJUIFooter:""});var Ca="",Ca="",H=Ca+"ui-state-default",ia=Ca+"css_right ui-icon ui-icon-",Xb=Ca+"fg-toolbar ui-toolbar ui-widget-header ui-helper-clearfix";h.extend(m.ext.oJUIClasses,
+
+info = {u'notes': '', u'plate_type': '96-well', u'created_on': '', u'name': 'Fecal Plate #1', u'email': 'test'};
+layout = [{'notes': None, 'sample_id': '000001005', 'col': 1, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001031', 'col': 1, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001038', 'col': 1, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001047', 'col': 1, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001049', 'col': 1, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001129', 'col': 1, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001155', 'col': 1, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001246', 'col': 1, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001256', 'col': 2, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001265', 'col': 2, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001284', 'col': 2, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001307', 'col': 2, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001333', 'col': 2, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001354', 'col': 2, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001364', 'col': 2, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001366', 'col': 2, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001375', 'col': 3, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001382', 'col': 3, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001397', 'col': 3, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001433', 'col': 3, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001446', 'col': 3, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001451', 'col': 3, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001479', 'col': 3, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001482', 'col': 3, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001487', 'col': 4, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001526', 'col': 4, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001528', 'col': 4, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001556', 'col': 4, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001573', 'col': 4, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001589', 'col': 4, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001595', 'col': 4, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001612', 'col': 4, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001622', 'col': 5, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001645', 'col': 5, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001646', 'col': 5, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001649', 'col': 5, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001654', 'col': 5, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001691', 'col': 5, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001703', 'col': 5, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001704', 'col': 5, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001713', 'col': 6, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001754', 'col': 6, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000001772', 'col': 6, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000001797', 'col': 6, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000001801', 'col': 6, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000001832', 'col': 6, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000001854', 'col': 6, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000001870', 'col': 6, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000001874', 'col': 7, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000001875', 'col': 7, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000002067', 'col': 7, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000002068', 'col': 7, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000002148', 'col': 7, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000002175', 'col': 7, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000002176', 'col': 7, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000002199', 'col': 7, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000002200', 'col': 8, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000002243', 'col': 8, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000002244', 'col': 8, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000002273', 'col': 8, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000002274', 'col': 8, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000002349', 'col': 8, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000002350', 'col': 8, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000002443', 'col': 8, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000002444', 'col': 9, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000002471', 'col': 9, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000002607', 'col': 9, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000002683', 'col': 9, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000002687', 'col': 9, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000002739', 'col': 9, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000002773', 'col': 9, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000002774', 'col': 9, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000002777', 'col': 10, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000002805', 'col': 10, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000002806', 'col': 10, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000002814', 'col': 10, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000002863', 'col': 10, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000002893', 'col': 10, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000002894', 'col': 10, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000003091', 'col': 10, 'name': None, 'row': 8}, {'notes': None, 'sample_id': '000003092', 'col': 11, 'name': None, 'row': 1}, {'notes': None, 'sample_id': '000003093', 'col': 11, 'name': None, 'row': 2}, {'notes': None, 'sample_id': '000003458', 'col': 11, 'name': None, 'row': 3}, {'notes': None, 'sample_id': '000003951', 'col': 11, 'name': None, 'row': 4}, {'notes': None, 'sample_id': '000003969', 'col': 11, 'name': None, 'row': 5}, {'notes': None, 'sample_id': '000003970', 'col': 11, 'name': None, 'row': 6}, {'notes': None, 'sample_id': '000003971', 'col': 11, 'name': None, 'row': 7}, {'notes': None, 'sample_id': '000004234', 'col': 11, 'name': None, 'row': 8}];
+
+&quot;
+
+>>> import json
+>>> json.dumps([1, 2, 3, None, 4])
+'[1, 2, 3, null, 4]'
+
+in handler:
+json.dumps
+
+in template:
+json_encode()
+
+info = {&quot;plate_type&quot;: &quot;96-well&quot;, &quot;notes&quot;: null, &quot;email&quot;: &quot;test&quot;, &quot;created_on&quot;: null, &quot;name&quot;: &quot;Fecal Plate #1&quot;};
+
+var geodata = json_parse("{{geodata|escapejs}}");
+
+var ques_list = JSON.parse(cur_ques_details);
+
+info = {'plate_type': '96-well', 'notes': null, 'email': 'test', 'created_on': null, 'name': 'Fecal Plate #1'};
+
+=============
+
+
+workaround: in handler, do: json.dumps(x).replace('"', "'").
+but it cannot parse single quote correctly.
+
+simplejson is a third-party python module
+
+=============
+
+def json_encode(value):
+    """JSON-encodes the given Python object."""\
+    return json.dumps(value).replace("</", "<\\/")
+
+10317
+
+
+integer and longint -> long
+smallint -> int
+
+
+
+                sql = """SELECT sample_id, array_agg(study_id ORDER BY study_id)
+                         FROM pm.study_sample
+                         WHERE study_id IN %s
+                         GROUP BY sample_id"""
+                TRN.add(sql, [tuple(study_ids)])
+
+
+
+
+Hi all,
+
+In order to implement the mechanism that a sample must be associated with one or more studies, I spent long time to work it out, and the changes are substantial. Please excuse me if you find there are too many lines edited, but it can't be any shorter in order to produce a functional, logically intact unit. 
+

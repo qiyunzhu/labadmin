@@ -12,9 +12,3 @@ class PMPlateListHandler(BaseHandler):
         plates = db.get_sample_plate_list()
         self.render("pm_plate_list.html", currentuser=self.current_user,
                     target=target, plates=plates)
-
-    @authenticated
-    def post(self):
-        action = self.get_argument("action")
-        if action == 'populate':
-            db.populate_plate_mapper()

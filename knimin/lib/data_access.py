@@ -2957,53 +2957,58 @@ class KniminAccess(object):
             if not TRN.execute_fetchlast():
                 raise ValueError('Email %s does not exist.' % email)
 
-    def _plate_type_name_to_id(self, name=None):
-        """Gets plate type ID by name
-
-        Parameters
-        ----------
-        name : str, optional
-            Plate type name. If None, the first plate type will be selected
+    def _get_first_plate_type(self):
+        """Retrieves ID of the first plate type
 
         Returns
         -------
         int
+            ID of the first plate type
+        """
+        with TRN:
+            sql = """SELECT plate_type_id
+                     FROM pm.plate_type
+                     ORDER BY plate_type_id
+                     LIMIT 1"""
+            TRN.add(sql)
+            return TRN.execute_fetchlast()
+
+    def _plate_type_exists(self, id):
+        """Confirms that a plate type exists
+
+        Parameters
+        ----------
+        id : int
             ID of the plate type
 
         Raises
         ------
         ValueError
-            If the plate type name does not exist
+            If the plate type does not exist
         """
         with TRN:
-            sql = """SELECT plate_type_id
-                     FROM pm.plate_type
-                     WHERE %s IS NULL OR name = %s
-                     ORDER BY plate_type_id ASC
-                     LIMIT 1"""
-            TRN.add(sql, [name, name])
-            res = TRN.execute_fetchflatten()
-            if not res:
-                raise ValueError('Plate type %s does not exist.' % repr(name))
-            return res[0]
+            sql = """SELECT EXISTS (SELECT 1 FROM pm.plate_type
+                                    WHERE plate_type_id = %s)"""
+            TRN.add(sql, [id])
+            if not TRN.execute_fetchlast():
+                raise ValueError('Plate type ID %s does not exist.' % id)
 
-    def create_sample_plate(self, name, email=None, created_on=None,
-                            notes=None, plate_type=None):
+    def create_sample_plate(self, name, plate_type_id, email=None,
+                            created_on=None, notes=None):
         """Creates a new sample plate
 
         Parameters
         ----------
         name : str
             Assigns a name to the sample plate
+        plate_type_id : int
+            Defines the type of the sample plate
         email : str, optional
             Specifies who (by Email) created the sample plate
         created_on: datetime, optional
             Specifies when (by date) was the sample plate created
         notes : str, optional
             Makes notes of the sample plate
-        plate_type : str, optional
-            Defines the plate type of the sample plate
-            If None, the first plate type will be used
 
         Returns
         -------
@@ -3012,19 +3017,19 @@ class KniminAccess(object):
         """
         with TRN:
             self._sample_plate_is_unique(name)
+            self._plate_type_exists(plate_type_id)
             if email:
                 self._email_exists(email)
-            plate_type_id = self._plate_type_name_to_id(plate_type)
-            sql = """INSERT INTO pm.sample_plate (name, email, created_on,
-                                                  notes, plate_type_id)
+            sql = """INSERT INTO pm.sample_plate (name, plate_type_id, email,
+                                                  created_on, notes)
                      VALUES (%s, %s, %s, %s, %s)
                      RETURNING sample_plate_id"""
-            sql_args = [name, email, created_on, notes, plate_type_id]
+            sql_args = [name, plate_type_id, email, created_on, notes]
             TRN.add(sql, sql_args)
             return TRN.execute_fetchlast()
 
-    def edit_sample_plate(self, id, name, email=None, created_on=None,
-                          notes=None, plate_type=None):
+    def edit_sample_plate(self, id, name, plate_type_id, email=None,
+                          created_on=None, notes=None):
         """Edits properties of a sample plate
 
         Parameters
@@ -3033,27 +3038,26 @@ class KniminAccess(object):
             ID of the sample plate to edit
         name : str
             Assigns a name to the sample plate
+        plate_type_id : int
+            Defines the type of the sample plate
         email : str, optional
             Specifies who (by Email) created the sample plate
         created_on: datetime, optional
             Specifies when (by date) was the sample plate created
         notes : str, optional
             Makes notes of the sample plate
-        plate_type : str, optional
-            Defines the plate type of the sample plate
-            If None, the first plate type will be used
         """
         with TRN:
             self._sample_plate_exists(id)
             self._sample_plate_is_unique(name, id)
+            self._plate_type_exists(plate_type_id)
             if email:
                 self._email_exists(email)
-            plate_type_id = self._plate_type_name_to_id(plate_type)
             sql = """UPDATE pm.sample_plate
-                     SET name = %s, email = %s, created_on = %s, notes = %s,
-                         plate_type_id = %s
+                     SET name = %s, plate_type_id = %s, email = %s,
+                         created_on = %s, notes = %s
                      WHERE sample_plate_id = %s"""
-            sql_args = [name, email, created_on, notes, plate_type_id, id]
+            sql_args = [name, plate_type_id, email, created_on, notes, id]
             TRN.add(sql, sql_args)
             TRN.execute()
 
@@ -3068,17 +3072,15 @@ class KniminAccess(object):
         Returns
         -------
         dict
-            {name : str, email : str, created_on: datetime, notes : str,
-             plate_type : str}
-            Properties of the sample plate: name, who created it, when it was
-            created, notes, and plate type name
+            {name : str, plate_type_id : int, email : str,
+             created_on: datetime, notes : str}
+            Properties of the sample plate: name, plate type ID, who created
+            it, when it was created, and notes
         """
         with TRN:
             self._sample_plate_exists(id)
-            sql = """SELECT p.name, email, created_on, p.notes,
-                            pm.plate_type.name AS plate_type
-                     FROM pm.sample_plate p
-                     JOIN pm.plate_type USING (plate_type_id)
+            sql = """SELECT name, plate_type_id, email, created_on, notes
+                     FROM pm.sample_plate
                      WHERE sample_plate_id = %s"""
             TRN.add(sql, [id])
             return dict(TRN.execute_fetchindex()[0])
@@ -3191,77 +3193,47 @@ class KniminAccess(object):
             TRN.add(sql, [id])
             TRN.execute()
 
-    def get_id_by_name(self, field, name):
-        """Converts a field option name to its corresponding ID
+    def get_property_options(self, property):
+        """Retrieves a list of available options for a property
 
         Parameters
         ----------
-        field : str
-            Field name, i.e., table name under schema "pm"
-        name : str
-            Name of the option
+        property : str
+            Property name, i.e., name of a table under schema "pm"
 
         Returns
         -------
-        int
-            ID of the option
-
-        Raises
-        ------
-        ValueError
-            If name is not found in the table
+        list of dict
+            {id : int, name : str, notes : str}
+            ID, name and notes for each option
         """
         with TRN:
-            sql = "SELECT {} FROM {} WHERE name = %s"
-            TRN.add(sql.format(field + '_id', 'pm.' + field), [name])
-            res = TRN.execute_fetchflatten()
-            if not res:
-                raise ValueError('%s is not an option for %s.'
-                                 % (repr(name), repr(field)))
-            return res[0]
+            sql = """SELECT {} AS id, name, notes
+                     FROM {}
+                     ORDER BY {}"""
+            TRN.add(sql.format(property + '_id',
+                               'pm.' + property,
+                               property + '_id'))
+            return [dict(x) for x in TRN.execute_fetchindex()]
 
-    def get_sample_plate_type(self, id=None):
-        """Gets plate type properties of a sample plate
-
-        Parameters
-        ----------
-        id : int, optional
-            ID of an existing sample plate
-            If None, the first plate type will be selected
+    def get_plate_types(self):
+        """Gets all available plate types
 
         Returns
         -------
-        dict
-            {name : str, cols : int, rows : int, notes : str}
-            Properties of a plate type:
-            Name, number of columns, number of rows, notes
+        list of dict
+            {id : int, name : str, cols : int, rows : int, notes : str}
+            ID, name, notes, and numbers of columns and rows of each plate type
         """
         with TRN:
-            sql = """SELECT pm.plate_type.name, cols, rows, pm.plate_type.notes
+            sql = """SELECT plate_type_id AS id, name, notes, cols, rows
                      FROM pm.plate_type
-                     JOIN pm.sample_plate
-                     USING (plate_type_id)
-                     WHERE %s IS NULL OR sample_plate_id = %s"""
-            TRN.add(sql, [id, id])
-            return dict(TRN.execute_fetchindex()[0])
-
-    def get_plate_type_list(self):
-        """Gets a list of plate types
-
-        Returns
-        -------
-        list of str
-            Sorted list of plate type names
-        """
-        with TRN:
-            sql = """SELECT name
-                     FROM pm.plate_type
-                     ORDER BY name"""
+                     ORDER BY plate_type_id"""
             TRN.add(sql)
-            return TRN.execute_fetchflatten()
+            return [dict(x) for x in TRN.execute_fetchindex()]
 
-    def get_email_list(self):
-        """Gets a list of emails
+    def get_emails(self):
+        """Gets all available emails
 
         Returns
         -------
@@ -3300,8 +3272,9 @@ class KniminAccess(object):
             person : str, date : datetime,
             study : list of [int, int, int, str])}
             Plate id, plate name, plate type (name and total number of wells),
-            number of samples filled, email, date, study (number of studies,
-            ID, Qiita ID and title of the most frequent study)
+            (number and proportion) of samples filled, email, date, study
+            (number of studies, ID, Qiita ID and title of the most frequent
+            study)
         """
         with TRN:
             sql = """SELECT sample_plate_id, sample_plate.name, plate_type.name,
@@ -3311,7 +3284,7 @@ class KniminAccess(object):
                      JOIN pm.plate_type USING (plate_type_id)
                      JOIN (SELECT study_id, qiita_study_id, title,
                                   sample_plate_id,
-                                  COUNT(study_id) AS study_freq,
+                                  COUNT(DISTINCT study_id) AS study_freq,
                                   COUNT(sample_id) AS sample_count
                            FROM pm.study
                            JOIN pm.study_sample USING (study_id)
@@ -3325,100 +3298,18 @@ class KniminAccess(object):
             res = TRN.execute_fetchindex()
             plates = []
             for row in res:
+                wells = row[3]*row[4]
+                ratio = 0.0
+                if wells:
+                    ratio = round(float(row[7])/wells, 3)
                 plates.append({'id': int(row[0]),
                                'name': row[1],
-                               'type': [row[2], row[3]*row[4]],
+                               'type': [row[2], wells],
                                'person': row[5],
                                'date': row[6],
-                               'count': row[7],
+                               'fill': [row[7], ratio],
                                'study': [row[8], row[9], row[10], row[11]]})
             return plates
-
-    def populate_plate_mapper(self):
-        """Pre-populates plate mapper with some test data
-
-        This command is only for temporary purpose. It adds some field options
-        and migrates existing data from schema "barcodes" into the newly
-        created schema "pm". It should be executed only once from the
-        "Plate List" webpage.
-        """
-        # field options
-        sql = """INSERT INTO pm.plate_type (name, cols, rows, notes)
-                 VALUES ('96-well', 12, 8, 'Standard 96-well plate')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_robot (name) VALUES ('HOWE_KF1'),
-                 ('HOWE_KF2'), ('HOWE_KF3'), ('HOWE_KF4')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_tool (name) VALUES ('108379Z')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.processing_robot (name) VALUES ('ROBE'),
-                 ('RIKE'), ('JERE'), ('CARMEN')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.tm300_8_tool (name) VALUES ('208484Z'),
-                 ('311318B'), ('109375A'), ('3076189')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.tm50_8_tool (name) VALUES ('108364Z'),
-                 ('311426B'), ('311441B'), ('409172Z')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.extraction_kit_lot (name) VALUES ('PM16B11')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.master_mix_lot (name) VALUES ('14459')"""
-        self._con.execute(sql)
-        sql = """INSERT INTO pm.water_lot (name) VALUES ('RNBD9959')"""
-        self._con.execute(sql)
-        # barcode => sample
-        sql = """INSERT INTO pm.sample (sample_id)
-                 SELECT barcode
-                 FROM barcodes.barcode;"""
-        self._con.execute(sql)
-        sql = """UPDATE pm.sample
-                 SET barcode = sample_id"""
-        self._con.execute(sql)
-        # project => study
-        sql = """INSERT INTO pm.study (qiita_study_id, title)
-                 SELECT project_id, project
-                 FROM barcodes.project;"""
-        self._con.execute(sql)
-        # project_barcode => study_sample
-        sql = """INSERT INTO pm.study_sample (study_id, sample_id)
-                 SELECT study_id, barcode
-                 FROM barcodes.project_barcode
-                 JOIN pm.study ON (project_id = qiita_study_id)
-                 ORDER BY study_id, barcode;"""
-        self._con.execute(sql)
-        # plate => plate
-        sql = """SELECT plate_id, plate
-                 FROM barcodes.plate
-                 ORDER BY plate_id"""
-        plates = [(x[0], x[1]) for x in self._con.execute_fetchall(sql)]
-        if not plates:
-            return 1
-        for plate in plates:
-            sql = """INSERT INTO pm.sample_plate (name, email, plate_type_id)
-                     VALUES (%s, 'test', 1)
-                     RETURNING sample_plate_id"""
-            id = self._con.execute_fetchone(sql, [plate[1]])[0]
-            sql = """SELECT barcode
-                     FROM barcodes.plate_barcode
-                     WHERE plate_id = %s
-                     ORDER BY barcode"""
-            barcodes = [x[0] for x in self._con.execute_fetchall(sql, [id])]
-            if not barcodes:
-                continue
-            count = 0
-            nbarcode = len(barcodes)
-            (ncol, nrow) = (12, 8)
-            sql = """INSERT INTO pm.sample_plate_layout (sample_plate_id,
-                                                         sample_id, col, row)
-                     VALUES (%s, %s, %s, %s)"""
-            for i in range(ncol):
-                for j in range(nrow):
-                    self._con.execute(sql, [id, barcodes[count], i+1, j+1])
-                    count += 1
-                    if count == nbarcode:
-                        break
-                if count == nbarcode:
-                    break
 
     def _clear_table(self, table, schema):
         """Test helper to wipe out a database table"""
