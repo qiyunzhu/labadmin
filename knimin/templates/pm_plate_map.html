@@ -1,0 +1,26 @@
+<!-- The Plate Mapper module -->
+<!-- Plate map -->
+
+{% extends logged_in_index.html %}
+{% block head %}
+{% from json import dumps %}
+{% autoescape None %}
+<link rel="stylesheet" href="/static/vendor/font-awesome/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="/static/css/plate_mapper.css">
+<script type="text/javascript">
+  // Retrieve data
+  var target = {{dumps(target)}};                 // Target object: sample, primer, barseq, etc.
+  var id = {{dumps(id)}};                         // Plate ID (0 for creating new plate)
+  var currentuser = {{dumps(currentuser)}};       // Current user
+</script>
+<script type="text/javascript" src="/static/js/pm_plate_map.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    var pm = new plateMap(id, 'sample');
+    pm.printID();
+  });
+</script>
+{% end %}
+
+{% block content %}
+{% end %}
