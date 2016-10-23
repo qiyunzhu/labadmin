@@ -33,6 +33,12 @@ from knimin.handlers.projects_summary import ProjectsSummaryHandler
 from knimin.handlers.access_control import AGEditAccessHandler
 from knimin.handlers.ag_results_ready import AGResultsReadyHandler
 from knimin.handlers.pm_plate_list import PMPlateListHandler
+from knimin.handlers.pm_plate_map import (PMPlateMapHandler,
+                                          PMPlateMapGetEmailsHandler,
+                                          PMPlateMapGetPlateTypesHandler,
+                                          PMPlateMapGetPlateInfoHandler,
+                                          PMPlateMapGetPlateLayoutHandler,
+                                          PMPlateMapGetPlateIDsHandler)
 
 define("port", default=config.http_port, type=int)
 
@@ -76,6 +82,12 @@ class WebApplication(Application):
             (r"/admin/edit/", AGEditAccessHandler),
             (r"/consent_check", AGConsentCheckHandler),
             (r"/pm_plate_list/", PMPlateListHandler),
+            (r"/pm_plate_map/", PMPlateMapHandler),
+            (r"/pm_plate_map/emails/", PMPlateMapGetEmailsHandler),
+            (r"/pm_plate_map/plate_types/", PMPlateMapGetPlateTypesHandler),
+            (r"/pm_plate_map/info/", PMPlateMapGetPlateInfoHandler),
+            (r"/pm_plate_map/layout/", PMPlateMapGetPlateLayoutHandler),
+            (r"/pm_plate_map/plate_ids/", PMPlateMapGetPlateIDsHandler),
             (r".*", NoPageHandler)
         ]
         settings = {
