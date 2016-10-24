@@ -851,7 +851,7 @@ class TestDataAccess(TestCase):
                'name': 'test_plate',
                'type': ['96-well', 96],
                'person': email,
-               'date': created_on,
+               'date': created_on.strftime('%m/%d/%Y'),
                'fill': [3, 0.031],
                'study': [1, sid, None, 'test_study']}
         self.assertDictEqual(obs, exp)
