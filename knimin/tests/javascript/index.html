@@ -6,38 +6,20 @@
   <title>Plate Mapper test suite</title>
   <link rel="stylesheet" href="../../static/vendor/css/qunit-2.0.1.min.css">
   <script src="../../static/vendor/js/qunit-2.0.1.min.js"></script>
-  <script src="../../static/vendor/js/require-2.3.2.min.js"></script>
+  <script src="../../static/vendor/js/jquery-1.9.1.js"></script>
+  <script src="../../static/vendor/js/chosen.jquery.min.js"></script>
+  <script src="../../static/vendor/js/jquery.dataTables.min.js"></script>
+  <script src="../../static/js/pm_plate_map.js"></script>
+  <script src="../../tests/javascript/test_pm_plate_map.js"></script>
 </head>
 <body>
   <div id="qunit"></div>
   <div id="qunit-fixture" class="content"></div>
   <script type="text/javascript">
     QUnit.config.autostart = false;
-    setTimeout(function() {
-      requirejs.config({
-        'baseUrl': '../../',
-        'paths': {
-          // Libraries
-          'jquery': './static/vendor/js/jquery-1.9.1',
-          'chosen': './static/vendor/js/chosen.jquery.min',
-          'datatables': './static/vendor/js/jquery.dataTables.min',
-          // Objects
-          'pm_plate_map': './static/js/pm_plate_map',
-          // Tests
-          'test_pm_plate_map': './tests/javascript/test_pm_plate_map',
-        }
-      });
-      require(['jquery', 'chosen', 'datatables',
-               'pm_plate_map',
-               'test_pm_plate_map'],
-              function($, chosen, DataTable,
-                       pm_plate_map,
-                       test_pm_plate_map) {
-              $(document).ready(function() {
-                QUnit.start();
-              });
-      });
-    }, 10);
+    $(document).ready(function() {
+      QUnit.start();
+    });
   </script>
 </body>
 </html>

@@ -3302,11 +3302,14 @@ class KniminAccess(object):
                 ratio = 0.0
                 if wells:
                     ratio = round(float(row[7])/wells, 3)
+                date = None
+                if row[6] is not None:
+                    date = row[6].strftime('%m/%d/%Y')
                 plates.append({'id': int(row[0]),
                                'name': row[1],
                                'type': [row[2], wells],
                                'person': row[5],
-                               'date': row[6],
+                               'date': date,
                                'fill': [row[7], ratio],
                                'study': [row[8], row[9], row[10], row[11]]})
             return plates
