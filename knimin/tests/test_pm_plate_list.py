@@ -48,15 +48,15 @@ class TestPMPlateListHandler(TestHandlerBase):
             self.assertIn('Sample Plate List', response.body)
             # Test the newly created sample plate
             p1 = db.get_sample_plate_list()[-1]
-            x = p1['fill'][1]
+            r = p1['fill'][1]
             battery = ''
-            if x == 1.0:
+            if r == 1.0:
                 battery = 'full'
-            elif x >= 0.667:
+            elif r >= 0.667:
                 battery = 'three-quarters'
-            elif x > 0.333:
+            elif r > 0.333:
                 battery = 'half'
-            elif x > 0.0:
+            elif r > 0.0:
                 battery = 'quarter'
             else:
                 battery = 'empty'
